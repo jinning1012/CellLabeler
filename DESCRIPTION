@@ -1,0 +1,11 @@
+Package: CellLabeler
+Title: CellLabeler: Automatical unique marker gene detection and cell type annotation in human multi-organs in single-cell resolved transcriptomics data.
+Version: 0.0.0.1
+Author: Jin Ning, Yuhan Zhao, Xiya Guo, Shiquan Sun.
+Maintainer: Jin Ning <newlife1012@stu.xjtu.edu.cn>
+Description: CellLabeler is an automatic cell type annotation tools in single cell RNA sequencing data analysis consisting of two components: a Firth’s logistic regression-based marker gene detection module and a cell type annotation module based on a cross-organ marker gene database. CellLabeler can be applied to a broad spectrum of human organs or tissues.
+License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
+    license
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
