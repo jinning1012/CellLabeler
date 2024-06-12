@@ -2,7 +2,6 @@
 
 S3method(celllabeler,CellLabeler)
 S3method(celllabeler,default)
-export(CellLabeler)
 export(CellLabeler.plot)
 export(CombinePValues)
 export(ComputeGeneScore)

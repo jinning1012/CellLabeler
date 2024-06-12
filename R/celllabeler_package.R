@@ -3,5 +3,4 @@
 #' @import igraph
 #' @import dplyr
 #' @import stringr
-#' @export CellLabeler
 NULL
