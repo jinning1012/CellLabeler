@@ -14,7 +14,7 @@ FindAllUniqueMarkers(
 )
 }
 \arguments{
-\item{data.use}{Log-normalized gene expression matrix}
+\item{data.use}{Log-normalized gene expression matrix; rows are genes and columns as cells}
 
 \item{sample.id}{Character vector of sample information in metadata.}
 

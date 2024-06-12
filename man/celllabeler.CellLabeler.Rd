@@ -54,5 +54,5 @@ object A CellLabeler object
 CellLabeler:
 }
 \author{
-Jin Ning, Shiquan Sun
+Jin Ning
 }

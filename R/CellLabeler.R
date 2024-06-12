@@ -204,7 +204,7 @@ celllabeler.default <- function(object,
 #' 
 #' @return object A CellLabeler object
 #'
-#' @author Jin Ning, Shiquan Sun
+#' @author Jin Ning
 #' 
 #' @export
 #' 

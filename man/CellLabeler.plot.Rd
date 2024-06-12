@@ -8,10 +8,6 @@ CellLabeler.plot(model_predict)
 }
 \arguments{
 \item{model_predict}{Results of ComputePrediction(). A list contating scores.}
-
-\item{marker_list}{List of makers, with list names being cell type names.}
-
-\item{PCT_mat}{Gene expression percent matrix. Rows are genes and columns are clusters.}
 }
 \description{
 Plot gene score for clusters regarding each possible cell types.
