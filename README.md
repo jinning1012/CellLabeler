@@ -5,7 +5,7 @@ CellLabeler is implemented as an open source R package for detecting unique mark
 
 > library(devtools)
 > 
-> install_github("JinNing329/CellLabeler")
+> install_github("jinning1012/CellLabeler")
 
 # Usage
 The main function is celllabeler(). You can find the instructions and an example by '?celllabeler.default'.
