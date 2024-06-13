@@ -67,10 +67,7 @@ CombinePValues <- function(pvalues, weights=NULL){
 #' @param use.umi Regress on UMI count data
 #' @param verbose Display a progress bar
 #
-#' @importFrom stats as.formula lm
-#' @importFrom utils txtProgressBar setTxtProgressBar
 #' @export 
-#' 
 #' 
 RegressOutMatrix <- function(data.expr,
                              latent.data = NULL,

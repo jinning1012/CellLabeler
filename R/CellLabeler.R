@@ -9,7 +9,7 @@
 ######################################################################
 
 #'
-#' Fitting the constrained spline model to perform temporal differential expression analysis for time course scRNA-seq data
+#' Run CellLabeler to detect uniquely expressed marker genes and perform automatic cell type annotation in scRNA-seq data analysis.
 #' 
 #' @param object Gene expression raw count matrix
 #' @param sample.id Column names of sample information in metadata. 
@@ -26,7 +26,7 @@
 #' @examples
 #' 
 #' data(exampledata)
-#' res <- celllabeler(object=counts, sample.id = sample.id, cluster.id = cluster.id, markers = markers, num.core = 10)
+#' res = celllabeler(object=counts, sample.id = sample.id, cluster.id = cluster.id, markers = markers, num.core = 10)
 #' 
 #' @export
 #' 
@@ -186,10 +186,10 @@ celllabeler.default <- function(object,
 
 
 
-#' CellLabeler: 
+#' CellLabeler: Run CellLabeler to detect uniquely expressed marker genes and perform automatic cell type annotation in scRNA-seq data analysis.
+#' 
 #' @param object A CellLabeler object 
 #' 
-#'
 #' @param features Feature names. Default is NULL, then all features will be used.
 #' @param sample.var Column names of sample information in metadata. 
 #' @param cluster.var Column names of cluster information in metadata. 

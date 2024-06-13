@@ -2,7 +2,7 @@
 % Please edit documentation in R/CellLabeler.R
 \name{celllabeler.default}
 \alias{celllabeler.default}
-\title{Fitting the constrained spline model to perform temporal differential expression analysis for time course scRNA-seq data}
+\title{Run CellLabeler to detect uniquely expressed marker genes and perform automatic cell type annotation in scRNA-seq data analysis.}
 \usage{
 \method{celllabeler}{default}(
   object,
@@ -44,11 +44,11 @@
 \item{num.core}{Number of cores in multi-threaded running. Default is 1.}
 }
 \description{
-Fitting the constrained spline model to perform temporal differential expression analysis for time course scRNA-seq data
+Run CellLabeler to detect uniquely expressed marker genes and perform automatic cell type annotation in scRNA-seq data analysis.
 }
 \examples{
 
 data(exampledata)
-res <- celllabeler(object=counts, sample.id = sample.id, cluster.id = cluster.id, markers = markers, num.core = 10)
+res = celllabeler(object=counts, sample.id = sample.id, cluster.id = cluster.id, markers = markers, num.core = 10)
 
 }
