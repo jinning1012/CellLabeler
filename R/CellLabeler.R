@@ -12,8 +12,8 @@
 #' Run CellLabeler to detect uniquely expressed marker genes and perform automatic cell type annotation in scRNA-seq data analysis.
 #' 
 #' @param object Gene expression raw count matrix
-#' @param sample.id Column names of sample information in metadata. 
-#' @param cluster.id Column names of cluster information in metadata. 
+#' @param sample.id Character vectors of sample information for each cell. 
+#' @param cluster.id Character vectors of cluster information for each cell. 
 #' @param similar.gene Integer value as the number of top expressed genes in considering combining clusters before DE test
 #' @param similar.pct Numeric value in [0,1] as the threshold to combine clusters before DE test when either two cluster have enough overlapped highly expressed genes. Default is 0.8.
 #' @param lfc Limit testing to genes which show the maximum on average X-fold difference (log-scale) between the interested clusters and the rest others. Default is 0.5.
@@ -276,6 +276,48 @@ celllabeler <- function(object, ...) {
 }## end func
 
 
+
+
+#' Add markers to celllabeler object with ude and perform prediction
+#' @param markers A list of markers
+#' @param object A Celllabeler object
+#' @param cluster.var Column names of cluster information in metadata. 
+#' @param cluster.id Character vectors of cluster information for each cell. 
+#' 
+#' @return A celllabeler object
+#' 
+#' @author Jin ning
+#' 
+#' 
+
+AddMarkers <- function(object, markers = NULL, cluster.var = NULL, cluster.id = NULL, 
+                        ...){
+    if(class(x = object) !="CellLabeler"){
+        stop("Input object should be a CellLabeler object.")
+    }
+    if(is.null(markers)){
+        stop("Please input marker lists.")
+    }
+    if(is.null(object@ModelFits)){
+        stop("Please run celllabeler() first to identify marker genes.")
+    }
+    if(is.null(cluster.var) & is.null(cluster.id)){
+        stop("Please input cluster.var or cluster.id.")
+    }
+    if(is.null(cluster.id) & (!is.null(cluster.var))){
+        cluster.id = object@meta.data[,cluster.var] %>% as.character()
+    }
+
+    ### check markers and perform cell type annotation ###
+    counts = object@counts
+    modelfits = object@ModelFits
+    pct = ComputePCT(counts,cluster.id,allGenes(modelfits))
+    pred = ComputePrediction(modelfits,markers,pct)
+
+    object@prediction = pred$predict
+    
+    return(object)
+}
 ##############################################################################################
 
 

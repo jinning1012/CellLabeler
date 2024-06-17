@@ -15,4 +15,9 @@ if(F)
     obj <- celllabeler(object = obj, markers = markers, sample.var = "sample", cluster.var = "celltype")
     obj@ude
     obj@prediction
+
+    ## run celllabeler without inputing markers ##
+    obj <- CreateCellLabelerObject(counts = counts, meta.data = meta.data)
+    obj <- celllabeler(object = obj, sample.var = "sample", cluster.var = "celltype", num.core = 10)
+    obj <- AddMarkers(object = obj, markers = markers, cluster.var = "celltype")
 }

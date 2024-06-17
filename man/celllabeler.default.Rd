@@ -23,9 +23,9 @@
 \arguments{
 \item{object}{Gene expression raw count matrix}
 
-\item{sample.id}{Column names of sample information in metadata.}
+\item{sample.id}{Character vectors of sample information for each cell.}
 
-\item{cluster.id}{Column names of cluster information in metadata.}
+\item{cluster.id}{Character vectors of cluster information for each cell.}
 
 \item{similar.gene}{Integer value as the number of top expressed genes in considering combining clusters before DE test}
 
