@@ -13,6 +13,7 @@ CreateCellLabelerObject(
   min.features = 0,
   min.umi = 10,
   num.core = 1,
+  ude.result = NULL,
   res.path = NULL
 )
 }

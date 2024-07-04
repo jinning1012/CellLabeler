@@ -7,7 +7,7 @@ Description: CellLabeler is an automatic cell type annotation tools in single ce
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
 Depends: R(>= 4.0.2)
-Imports: logistf (>= 1.26.0), igraph (>= 2.0.3), dplyr (>= 1.1.4), doParallel (>= 1.0.17), stringr(>= 1.5.1), utils(>= 4.3.1), Matrix(>= 1.6.5)
+Imports: logistf (>= 1.26.0), igraph (>= 2.0.3), dplyr (>= 1.1.4), doParallel (>= 1.0.17), stringr(>= 1.5.1), Matrix(>= 1.6.5), methods(>= 4.3.1)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1

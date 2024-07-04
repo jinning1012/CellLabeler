@@ -197,7 +197,7 @@ FindAllUniqueMarkers <- function(data.use,
     require(logistf)
     require(dplyr)
     require(doParallel)
-    require(utils)
+    #require(utils)
   })
   
   ## ******************************************* ##
@@ -270,9 +270,13 @@ FindAllUniqueMarkers <- function(data.use,
   ident.comb <- combn(clusters,2)
   ## start loop for comparisons
   all_res_list <- parallel::mclapply(1:ncol(ident.comb), mc.cores = num.core, function(i.comb)
-  {
+  { 
     ident.1 <- ident.comb[1,i.comb]
     ident.2 <- ident.comb[2,i.comb]
+    ## ningjin 20240701
+    if(verbose){
+      cat(paste0("### Logistf on ",ident.1, " versus ",ident.1,"...\n"))
+    }
     output <- runOneCompare(ident.1, ident.2) 
     return(output)
   })
@@ -349,6 +353,10 @@ FindAllUniqueMarkers <- function(data.use,
 #' 
 ComputePCT <- function(cnt_data, cluster.id = NULL, sub.genes = NULL){
   if(!is.null(sub.genes)){
+    ## check if sub.genes exceed provided genes
+    if(!all(sub.genes %in% rownames(cnt_data))){
+      stop(paste0("## Given genes in ComputePCT() exceed the range of all genes from counts data."))
+    }
     cnt_data <- cnt_data[sub.genes,]
   }
   ngene = nrow(cnt_data)

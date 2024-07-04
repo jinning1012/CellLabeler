@@ -5,7 +5,7 @@
 # Title :  
 # Authors: Jin Ning and Shiquan Sun
 # Contacts: sqsunsph@xjtu.edu.cn;newlife1012@stu.xjtu.edu.cn
-#          Xi'an Jiatong University, Department of Biostatistics
+#          Xi'an Jiatong University, Center for Single-Cell Omics and Health
 ######################################################################
 
 #' Each CellLabeler object has a number of slots which store information. Key slots to access are listed below.
@@ -40,7 +40,7 @@ setClass("CellLabeler", slots=list(
 #' @return Returns CellLabeler object with filtered gene expression matrix
 #' 
 #' @export
-CreateCellLabelerObject <- function(counts, meta.data, project = "CellLabeler", pct.cells = 0.005, min.cells = 0, min.features = 0, min.umi = 10, num.core = 1, res.path = NULL){
+CreateCellLabelerObject <- function(counts, meta.data, project = "CellLabeler", pct.cells = 0.005, min.cells = 0, min.features = 0, min.umi = 10, num.core = 1, ude.result = NULL, res.path = NULL){
     ## check data order should consistent
 	if(!identical(colnames(counts), rownames(meta.data))){
 		stop("The column names of counts and row names of meta.data should be should be matched each other! (counts -- g x n; meta.data -- n x c)")
@@ -84,7 +84,19 @@ CreateCellLabelerObject <- function(counts, meta.data, project = "CellLabeler", 
         num.core = num.core,
         res.path = res.path
 	)
-  
+
+    ## add ude.results in it
+    if(!is.null(ude.result)){
+        names_input = names(ude.result)
+        if(!all(c("ude","prediction","ModelFits") %in% names_input)){
+            stop("## Input UDE results are not correct.")
+        }
+
+        object@ude = ude.result$ude
+        object@prediction = ude.result$prediction
+        object@ModelFits = ude.result$ModelFits
+    }
+
 	return(object)
 }# end function
 

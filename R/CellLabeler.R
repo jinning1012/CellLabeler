@@ -5,7 +5,7 @@
 # Title :  
 # Authors: Jin Ning and Shiquan Sun
 # Contacts: sqsunsph@xjtu.edu.cn;newlife1012@stu.xjtu.edu.cn
-#          Xi'an Jiatong University, Department of Biostatistics
+#          Xi'an Jiatong University, Center for Single-Cell Omics and Health
 ######################################################################
 
 #'
@@ -22,6 +22,8 @@
 #' @param mod Character as "combine" or "all", specifying if combining similar clusters or not before DE test. Default is "combine"
 #' @param up.thr Numberic value in [0,1] as the proportion of the remaining clusters in which a gene is upregulated in the interested group compared with it. Highter, the more strict. Default 0.9.
 #' @param num.core Number of cores in multi-threaded running. Default is 1.
+#' 
+#' @importFrom igraph graph_from_adjacency_matrix components
 #' 
 #' @examples
 #' 
@@ -46,6 +48,7 @@ celllabeler.default <- function(object,
     suppressPackageStartupMessages({require("dplyr")})
     ## load in counts ##
     counts = object
+    
     data = Seurat::NormalizeData(counts, verbose = verbose)
     if(mod == "combine")
 	{	   
@@ -82,12 +85,11 @@ celllabeler.default <- function(object,
     }
     adj_matrix <- adj_matrix+t(adj_matrix)-diag(diag(adj_matrix))
     
-    suppressPackageStartupMessages({library(igraph)})
     # Convert adjacency matrix to graph #
     g = graph_from_adjacency_matrix(adj_matrix, mode = "undirected")
-    components = components(g)
+    components_g = components(g)
     # membership is a character vector while names being our cluster names and values being the splited group
-    membership = components$membership
+    membership = components_g$membership
     ## for each loop, we judge if there still remain more to be combined ##
     cluster.id.ori = cluster.id
     if(max(table(membership)) > 1) 
@@ -241,18 +243,18 @@ celllabeler.CellLabeler <- function(object,
     cluster.id = as.character(object@meta.data[,cluster.var])
 	## run main
 	results <- celllabeler(object = counts,
-                                markers = markers,
-                                sample.id = sample.id,
-                                cluster.id = cluster.id,
-                                similar.gene = similar.gene,
-                                similar.pct = similar.pct,
-                                lfc = lfc,
-                                max.genes = max.genes,
-                                min.ccells = min.ccells,
-                                up.thr = up.thr,
-                                mod=mod,
-                                num.core = num.core,
-                                verbose = verbose, ... )
+                            markers = markers,
+                            sample.id = sample.id,
+                            cluster.id = cluster.id,
+                            similar.gene = similar.gene,
+                            similar.pct = similar.pct,
+                            lfc = lfc,
+                            max.genes = max.genes,
+                            min.ccells = min.ccells,
+                            up.thr = up.thr,
+                            mod=mod,
+                            num.core = num.core,
+                            verbose = verbose, ... )
 
 	## store back the treated data
 	object@ude = results$ude
@@ -290,28 +292,56 @@ celllabeler <- function(object, ...) {
 #' 
 #' 
 
-AddMarkers <- function(object, markers = NULL, cluster.var = NULL, cluster.id = NULL, 
+AddMarkers <- function(object, markers, cluster.var = NULL, cluster.id = NULL, 
                         ...){
+
+    ### check markers and perform cell type annotation ###
     if(class(x = object) !="CellLabeler"){
         stop("Input object should be a CellLabeler object.")
     }
-    if(is.null(markers)){
-        stop("Please input marker lists.")
-    }
+
+    # if(is.null(markers)){
+    #     stop("Please input marker lists.")
+    # }
+
     if(is.null(object@ModelFits)){
         stop("Please run celllabeler() first to identify marker genes.")
     }
+
+    counts = object@counts
+    modelfits = object@ModelFits
+
+
     if(is.null(cluster.var) & is.null(cluster.id)){
         stop("Please input cluster.var or cluster.id.")
     }
+
     if(is.null(cluster.id) & (!is.null(cluster.var))){
         cluster.id = object@meta.data[,cluster.var] %>% as.character()
+
+        ## combine cluster.id according to ude results
+        modelfits_cluster = names(modelfits)
+        input_cluster_type = unique(as.character(cluster.id))
+        if(!setequal(modelfits_cluster,input_cluster_type)){
+            ## we need to do combination
+            modelfits_cluster = modelfits_cluster[grep(" & ",modelfits_cluster)]
+            for(icomb in modelfits_cluster){
+                index_icomb = which(cluster.id %in% strsplit(icomb," & ")[[1]])
+                cluster.id[index_icomb] = icomb
+            }
+        }
     }
 
-    ### check markers and perform cell type annotation ###
-    counts = object@counts
-    modelfits = object@ModelFits
-    pct = ComputePCT(counts,cluster.id,allGenes(modelfits))
+    
+
+    ## here, the input counts are filtered in the steps of CreateCellLabelerObject()
+    ## while the input modelfits are run on all raw genes
+    ## we filtered out the redundant genes in modelfits
+
+    input_genes = intersect(allGenes(modelfits), rownames(counts))
+    modelfits = lapply(modelfits, function(x) x[intersect(input_genes,rownames(x)),])
+    
+    pct = ComputePCT(counts,cluster.id,input_genes)
     pred = ComputePrediction(modelfits,markers,pct)
 
     object@prediction = pred$predict
