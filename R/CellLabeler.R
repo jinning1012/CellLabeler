@@ -24,15 +24,13 @@
 #' @param num.core Number of cores in multi-threaded running. Default is 1.
 #' 
 #' @importFrom igraph graph_from_adjacency_matrix components
-#' 
-#' @examples
-#' 
-#' data(exampledata)
-#' res = celllabeler(object=counts, sample.id = sample.id, cluster.id = cluster.id, markers = markers, num.core = 10)
+#' @importFrom Seurat NormalizeData
+#' @importFrom Matrix rowMeans
+#' @importFrom parallel mclapply
 #' 
 #' @export
 #' 
-celllabeler.default <- function(object, 
+celllabeler.default = function(object, 
                                     markers = NULL,
                                     sample.id = NULL,
                   					cluster.id = NULL,
@@ -40,16 +38,39 @@ celllabeler.default <- function(object,
                   					similar.pct = 0.8,
                   					lfc = 0.5,
                   					min.ccells = 10,
+                                    max.cellsp = NULL,
                                     max.genes = 100,
 									mod = "combine",
                                     up.thr = 0.9,
                   					num.core = 1, 
-                  					verbose = FALSE) {
+                  					verbose = TRUE) {
     suppressPackageStartupMessages({require("dplyr")})
     ## load in counts ##
     counts = object
-    
-    data = Seurat::NormalizeData(counts, verbose = verbose)
+    data = NormalizeData(counts, verbose = verbose)
+
+    ##***********************************************************##
+    ##           down sample cells if required (optional)        ##
+    ##***********************************************************##
+    if(!is.null(max.cellsp)){
+        if(class(max.cellsp)!= "numeric"){
+            stop("The input down-sampling proportion is not numeric value.")
+        }
+        if(max.cellsp > 1){
+            warning("The input down-sampling proportion for each cluster exceed 1. It will be modified as 0.5 by default.")
+            max.cellsp = 0.5
+        }
+
+        cat(paste0("Down-sampling for each cluster with the proportion ",max.cellsp,"...\n"))
+        
+        idx.sample = sample(1:ncol(counts), ncol(counts) * max.cellsp)
+        counts = counts[,idx.sample]
+        data = data[,idx.sample]
+        sample.id = sample.id[idx.sample]
+        cluster.id = cluster.id[idx.sample]
+        rm(idx.sample)
+    }
+
     if(mod == "combine")
 	{	   
     ##*************************************************##
@@ -58,7 +79,7 @@ celllabeler.default <- function(object,
     cat("## Combining similar clusters before DE test.\n")
 	## compute log2FC for each clusters ##
     clusters = unique(cluster.id)
-    TopGenes_bylogFC = parallel::mclapply(clusters, mc.cores = num.core, function(ident.1)
+    TopGenes_bylogFC = mclapply(clusters, mc.cores = num.core, function(ident.1)
     {
         idx1 = which(cluster.id == ident.1)
         idx2 = which(cluster.id != ident.1)
@@ -77,13 +98,13 @@ celllabeler.default <- function(object,
     comb_overlap = lapply(seq(ncol(comb_mat)), function(id) TopGenes_bylogFC[comb_mat[,id]] %>% Reduce(intersect,.) %>% length) %>% unlist
     idx = which(comb_overlap > similar.gene*similar.pct)
     
-    adj_matrix <- matrix(0, nrow = length(TopGenes_bylogFC), ncol = length(TopGenes_bylogFC))
+    adj_matrix = matrix(0, nrow = length(TopGenes_bylogFC), ncol = length(TopGenes_bylogFC))
     colnames(adj_matrix) = rownames(adj_matrix) = names(TopGenes_bylogFC)
     for(i in idx)
     {
-        adj_matrix[comb_mat[1,i], comb_mat[2,i]] <- 1
+        adj_matrix[comb_mat[1,i], comb_mat[2,i]] = 1
     }
-    adj_matrix <- adj_matrix+t(adj_matrix)-diag(diag(adj_matrix))
+    adj_matrix = adj_matrix+t(adj_matrix)-diag(diag(adj_matrix))
     
     # Convert adjacency matrix to graph #
     g = graph_from_adjacency_matrix(adj_matrix, mode = "undirected")
@@ -92,20 +113,21 @@ celllabeler.default <- function(object,
     membership = components_g$membership
     ## for each loop, we judge if there still remain more to be combined ##
     cluster.id.ori = cluster.id
-    if(max(table(membership)) > 1) 
-    {
+    if(max(table(membership)) > 1) {
         message(paste0("## Clusters have been combined before DE test."))
         tobeCombined = names(table(membership))[table(membership) > 1]
         for(id in tobeCombined)
         {
         grouplabel = names(membership)[membership == id]
-        cluster.id[cluster.id %in% grouplabel]<- paste(grouplabel,collapse = " & ")
+        cluster.id[cluster.id %in% grouplabel]= paste(grouplabel,collapse = " & ")
         }
     } ## end combination in graph
+
     }else{
         cat("## Do not check and combine clusters before DE test.\n")
     } ## end mod fi
-    rm(clusters,TopGenes_bylogFC,comb_mat, comb_overlap, adj_matrix, g, components, membership)
+
+    rm(clusters,TopGenes_bylogFC,comb_mat, comb_overlap, adj_matrix, g, components_g, membership)
     
 
     ##********************************************************##
@@ -128,13 +150,14 @@ celllabeler.default <- function(object,
         rm(idx.remain)
     } ## end filter
 	
+    
     ##***********************************************************##
 	##   Selecting top highly expressed genes for each cluster   ##
 	##***********************************************************##
-    if(max.genes != Inf)
+    if(max.genes != Inf) ## that means do not down to highly expressed genes
     {
         clusters = unique(cluster.id) ## update clusters
-        TopGenes_bylogFC = parallel::mclapply(clusters, mc.cores = num.core, function(ident.1)
+        TopGenes_bylogFC = mclapply(clusters, mc.cores = num.core, function(ident.1)
         {
             idx1 = which(cluster.id == ident.1)
             idx2 = which(cluster.id != ident.1)
@@ -142,13 +165,19 @@ celllabeler.default <- function(object,
             avg.ident.2 = log(x = rowMeans(x = exp(matrix(data[,idx2], ncol = length(idx2)))-1) + 1, base = 2)
             log_foldchange = avg.ident.1 - avg.ident.2
             names(log_foldchange) = rownames(data)
-            log_foldchange = log_foldchange[log_foldchange>0]
-            output = sort(log_foldchange, decreasing = T)[seq(min(max.genes, length(log_foldchange)))] %>% names
+            log_foldchange = log_foldchange[log_foldchange>lfc]
+            if(length(log_foldchange)>0){
+                output = sort(log_foldchange, decreasing = T)[seq(min(max.genes, length(log_foldchange)))] %>% names
+            }else{
+                output = NA # then no high expressed genes for this cluster 
+            }
+            
             return(output)
         })
-        names(TopGenes_bylogFC) = clusters
+        #names(TopGenes_bylogFC) = clusters
 
         gene.use = unique(unlist(TopGenes_bylogFC))
+        gene.use = gene.use[!is.na(gene.use)]
         counts = counts[gene.use,]
         data = data[gene.use,]
         rm(TopGenes_bylogFC)
@@ -182,13 +211,13 @@ celllabeler.default <- function(object,
     }
     
 
-    out = list(ude=pred$deg,prediction = pred$predict, score = pred$scores, ModelFits=ude)
+    out = list(ude=pred$deg,prediction = pred$predict, ModelScores = pred$scores, ModelFits=ude)
 	return(out)
 }## end function 
 
 
 
-#' CellLabeler: Run CellLabeler to detect uniquely expressed marker genes and perform automatic cell type annotation in scRNA-seq data analysis.
+#' CellLabeler: Run celllabeler() to detect uniquely expressed marker genes and perform automatic cell type annotation in scRNA-seq data analysis.
 #' 
 #' @param object A CellLabeler object 
 #' 
@@ -210,7 +239,7 @@ celllabeler.default <- function(object,
 #' 
 #' @export
 #' 
-celllabeler.CellLabeler <- function(object, 
+celllabeler.CellLabeler = function(object, 
                                     features = NULL,
                                     markers = NULL,
                                     sample.var = "sample",
@@ -220,6 +249,7 @@ celllabeler.CellLabeler <- function(object,
                                     lfc = 0.5,
                                     max.genes = 100,
                                     min.ccells = 20,
+                                    max.cellsp = NULL,
                                     up.thr = 0.9,
                                     mod='combine',
                                     num.core = 1,
@@ -242,7 +272,7 @@ celllabeler.CellLabeler <- function(object,
     sample.id = as.character(object@meta.data[,sample.var])
     cluster.id = as.character(object@meta.data[,cluster.var])
 	## run main
-	results <- celllabeler(object = counts,
+	results = celllabeler(object = counts,
                             markers = markers,
                             sample.id = sample.id,
                             cluster.id = cluster.id,
@@ -250,6 +280,7 @@ celllabeler.CellLabeler <- function(object,
                             similar.pct = similar.pct,
                             lfc = lfc,
                             max.genes = max.genes,
+                            max.cellsp = max.cellsp,
                             min.ccells = min.ccells,
                             up.thr = up.thr,
                             mod=mod,
@@ -260,6 +291,7 @@ celllabeler.CellLabeler <- function(object,
 	object@ude = results$ude
     object@prediction = results$prediction
     object@ModelFits = results$ModelFits
+    object@ModelScores = results$ModelScores
 	return(object)
 }## end func
 
@@ -267,13 +299,20 @@ celllabeler.CellLabeler <- function(object,
 #' Unique marker gene detection and automatic cell type annotation
 #' @param object An object
 #' @param ... Arguments passed to other methods
-#'
+#' 
+#' @examples
+#' 
+#' data(exampledata)
+#' meta.data = data.frame(sample = sample.id, cluster = cluster.id, row.names = colnames(counts))
+#' object = CreateCellLabelerObject(counts = counts, meta.data = meta.data)
+#' object = celllabeler(object=object, sample.var = "sample", cluster.var = "cluster", markers = markers, max.genes = 10)
+#' 
 #' @rdname celllabeler
 #' @export celllabeler
 #'
 #' @concept data-access
 #'
-celllabeler <- function(object, ...) {
+celllabeler = function(object, ...) {
 	UseMethod(generic = "celllabeler", object = object)
 }## end func
 
@@ -281,8 +320,8 @@ celllabeler <- function(object, ...) {
 
 
 #' Add markers to celllabeler object with ude and perform prediction
-#' @param markers A list of markers
 #' @param object A Celllabeler object
+#' @param markers Marker list with name being cell type names
 #' @param cluster.var Column names of cluster information in metadata. 
 #' @param cluster.id Character vectors of cluster information for each cell. 
 #' 
@@ -290,19 +329,15 @@ celllabeler <- function(object, ...) {
 #' 
 #' @author Jin ning
 #' 
-#' 
+#' @export 
 
-AddMarkers <- function(object, markers, cluster.var = NULL, cluster.id = NULL, 
+AddMarkers = function(object, markers, cluster.var = NULL, cluster.id = NULL, 
                         ...){
 
     ### check markers and perform cell type annotation ###
     if(class(x = object) !="CellLabeler"){
         stop("Input object should be a CellLabeler object.")
     }
-
-    # if(is.null(markers)){
-    #     stop("Please input marker lists.")
-    # }
 
     if(is.null(object@ModelFits)){
         stop("Please run celllabeler() first to identify marker genes.")
@@ -341,11 +376,12 @@ AddMarkers <- function(object, markers, cluster.var = NULL, cluster.id = NULL,
     input_genes = intersect(allGenes(modelfits), rownames(counts))
     modelfits = lapply(modelfits, function(x) x[intersect(input_genes,rownames(x)),])
     
+    cat("## Compute expression percent of genes ...\n")
     pct = ComputePCT(counts,cluster.id,input_genes)
     pred = ComputePrediction(modelfits,markers,pct)
 
     object@prediction = pred$predict
-    
+    object@ModelScores = pred$scores
     return(object)
 }
 ##############################################################################################

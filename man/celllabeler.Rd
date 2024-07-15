@@ -14,4 +14,12 @@ celllabeler(object, ...)
 \description{
 Unique marker gene detection and automatic cell type annotation
 }
+\examples{
+
+data(exampledata)
+meta.data = data.frame(sample = sample.id, cluster = cluster.id, row.names = colnames(counts))
+object = CreateCellLabelerObject(counts = counts, meta.data = meta.data)
+object = celllabeler(object=object, sample.var = "sample", cluster.var = "cluster", markers = markers, max.genes = 10)
+
+}
 \concept{data-access}

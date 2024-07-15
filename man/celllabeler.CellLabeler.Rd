@@ -2,7 +2,7 @@
 % Please edit documentation in R/CellLabeler.R
 \name{celllabeler.CellLabeler}
 \alias{celllabeler.CellLabeler}
-\title{CellLabeler: Run CellLabeler to detect uniquely expressed marker genes and perform automatic cell type annotation in scRNA-seq data analysis.}
+\title{CellLabeler: Run celllabeler() to detect uniquely expressed marker genes and perform automatic cell type annotation in scRNA-seq data analysis.}
 \usage{
 \method{celllabeler}{CellLabeler}(
   object,
@@ -15,6 +15,7 @@
   lfc = 0.5,
   max.genes = 100,
   min.ccells = 20,
+  max.cellsp = NULL,
   up.thr = 0.9,
   mod = "combine",
   num.core = 1,
@@ -51,7 +52,7 @@
 object A CellLabeler object
 }
 \description{
-CellLabeler: Run CellLabeler to detect uniquely expressed marker genes and perform automatic cell type annotation in scRNA-seq data analysis.
+CellLabeler: Run celllabeler() to detect uniquely expressed marker genes and perform automatic cell type annotation in scRNA-seq data analysis.
 }
 \author{
 Jin Ning

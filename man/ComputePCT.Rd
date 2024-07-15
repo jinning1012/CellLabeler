@@ -4,14 +4,14 @@
 \alias{ComputePCT}
 \title{Compute gene expression percent of single-cell RNA data.}
 \usage{
-ComputePCT(cnt_data, cluster.id = NULL, sub.genes = NULL)
+ComputePCT(counts, cluster.id = NULL, sub.genes = NULL)
 }
 \arguments{
-\item{cnt_data}{Gene expression raw count matrix.}
+\item{counts}{Gene expression raw count matrix.}
 
 \item{cluster.id}{Character vector of cluster information in metadata.}
 
-\item{sub.genes}{Subset of gene names.Default is NULL, then all genes will be used.}
+\item{sub.genes}{Subset of gene names. Default is NULL, then all genes will be used.}
 }
 \description{
 Compute gene expression percent of single-cell RNA data.

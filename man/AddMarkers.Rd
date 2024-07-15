@@ -9,7 +9,7 @@ AddMarkers(object, markers, cluster.var = NULL, cluster.id = NULL, ...)
 \arguments{
 \item{object}{A Celllabeler object}
 
-\item{markers}{A list of markers}
+\item{markers}{Marker list with name being cell type names}
 
 \item{cluster.var}{Column names of cluster information in metadata.}
 

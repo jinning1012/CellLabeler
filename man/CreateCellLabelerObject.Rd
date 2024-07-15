@@ -7,13 +7,13 @@
 CreateCellLabelerObject(
   counts,
   meta.data,
+  ude.result = NULL,
   project = "CellLabeler",
   pct.cells = 0.005,
   min.cells = 0,
   min.features = 0,
   min.umi = 10,
   num.core = 1,
-  ude.result = NULL,
   res.path = NULL
 )
 }
@@ -22,13 +22,33 @@ CreateCellLabelerObject(
 
 \item{meta.data}{Meta data dataframe to store batch and clustering information}
 
-\item{min_total_counts}{The minimum counts for each cell for filtering}
+\item{ude.result}{A list of results using celllabeler() on counts data}
 
-\item{percentage}{The percentage of cells that are expressed for analysis}
+\item{project}{Character name specifying project name, default is "CellLabeler"}
+
+\item{pct.cells}{A numeric value indicating at least what proportion of cells the genes expressed on}
+
+\item{min.cells}{A numeric value indicating at least what number of cells the genes expressed on}
+
+\item{min.features}{A numeric value indicating at least what number of genes the cells expressed}
+
+\item{min.umi}{A numeric value indicating at least what total counts of genes the cells expressed}
+
+\item{num.core}{Number of cores in parallel running}
+
+\item{res.path}{Path to save the results}
 }
 \value{
-Returns CellLabeler object with filtered gene expression matrix
+A CellLabeler object with filtered gene expression matrix
 }
 \description{
 Create the CellLabeler object with filtering step
+}
+\examples{
+
+data(exampledata)
+meta.data = data.frame(sample = sample.id, celltype = cluster.id)
+rownames(meta.data) = colnames(counts)
+obj = CreateCellLabelerObject(counts = counts, meta.data = meta.data)
+
 }

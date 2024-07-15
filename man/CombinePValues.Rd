@@ -7,9 +7,9 @@
 CombinePValues(pvalues, weights = NULL)
 }
 \arguments{
-\item{pvalues}{n x m pvalue matrix; n genes, m permutations}
+\item{pvalues}{A n x m pvalue matrix; n genes, m permutations}
 
-\item{weights}{}
+\item{weights}{A n x m weighs matrix for each genes in each permutation}
 }
 \value{
 Returns a n-length combined pvalues

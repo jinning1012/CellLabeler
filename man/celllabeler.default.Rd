@@ -13,11 +13,12 @@
   similar.pct = 0.8,
   lfc = 0.5,
   min.ccells = 10,
+  max.cellsp = NULL,
   max.genes = 100,
   mod = "combine",
   up.thr = 0.9,
   num.core = 1,
-  verbose = FALSE
+  verbose = TRUE
 )
 }
 \arguments{
@@ -45,10 +46,4 @@
 }
 \description{
 Run CellLabeler to detect uniquely expressed marker genes and perform automatic cell type annotation in scRNA-seq data analysis.
-}
-\examples{
-
-data(exampledata)
-res = celllabeler(object=counts, sample.id = sample.id, cluster.id = cluster.id, markers = markers, num.core = 10)
-
 }
