@@ -22,7 +22,8 @@ object = CreateCellLabelerObject(counts,meta.data)
 object
 
 ## run celllabeler
-object = celllabeler(object, sample.var = "sample", cluster.var = "cluster",markers = markers,num.core = 10)
+object = celllabeler(object, sample.var = "sample", cluster.var = "cluster",
+  markers = markers, num.core = 10)
 object@prediction
 ```
 
