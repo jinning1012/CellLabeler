@@ -11,17 +11,18 @@ The main function is celllabeler(). You can find the instructions and an example
 
 # Example
 We subsample a real scRNA-seq data as an example. 
-> data(exampledata)
-> head(sample.id)
-> head(cluster.id)
-  
+```{r}
+data(exampledata)
+head(sample.id)
+head(cluster.id)
+ 
+meta.data = data.frame(sample = sample.id, cluster=cluster.id, row.names = colnames(counts))
+object = CreateCellLabelerObject(counts,meta.data)
+object
 
-> meta.data = data.frame(sample = sample.id, cluster=cluster.id, row.names = colnames(counts))
-> object = CreateCellLabelerObject(counts,meta.data)
-> object
-> 
-> object = celllabeler(object, sample.var = "sample", cluster.var = "cluster",markers = markers,num.core = 10)
-> object@prediction
+object = celllabeler(object, sample.var = "sample", cluster.var = "cluster",markers = markers,num.core = 10)
+object@prediction
+```
                        cluster         prediction score
 1     cardiac endothelial cell   Endothelial cell     1
 2          cardiac muscle cell      Cardiomyocyte     1
