@@ -13,19 +13,19 @@ The main function is celllabeler(). You can find the instructions and an example
 > ## create celllabeler object
 > data(exampledata)
 > head(sample.id)
-# [1] "TSP12" "TSP12" "TSP12" "TSP12" "TSP12" "TSP12"
+> # [1] "TSP12" "TSP12" "TSP12" "TSP12" "TSP12" "TSP12"
 > head(cluster.id)
-# [1] "cardiac endothelial cell" "cardiac endothelial cell"
-# [3] "cardiac muscle cell"      "cardiac endothelial cell"
-# [5] "native cell"              "cardiac muscle cell"     
+> # [1] "cardiac endothelial cell" "cardiac endothelial cell"
+> # [3] "cardiac muscle cell"      "cardiac endothelial cell"
+> # [5] "native cell"              "cardiac muscle cell"     
 
 > meta.data = data.frame(sample = sample.id, cluster=cluster.id, row.names = colnames(counts))
 > object = CreateCellLabelerObject(counts,meta.data)
 > object
-## An object of class CellLabeler 
-## Gene number: 1546 
-## Cell number: 4285 
-## Meta columns: sample, cluster 
+> # ## An object of class CellLabeler 
+> # ## Gene number: 1546 
+> # ## Cell number: 4285 
+> # ## Meta columns: sample, cluster 
 
 > object = celllabeler(object, sample.var = "sample", cluster.var = "cluster",markers = markers,num.core = 10)
 Performing log-normalization
