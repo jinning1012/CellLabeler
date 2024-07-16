@@ -15,22 +15,21 @@ We subsample a real scRNA-seq data as an example.
 data(exampledata)
 head(sample.id)
 head(cluster.id)
- 
+
+## create object
 meta.data = data.frame(sample = sample.id, cluster=cluster.id, row.names = colnames(counts))
 object = CreateCellLabelerObject(counts,meta.data)
 object
 
+## run celllabeler
 object = celllabeler(object, sample.var = "sample", cluster.var = "cluster",markers = markers,num.core = 10)
 object@prediction
 ```
-                       cluster         prediction score
-1     cardiac endothelial cell   Endothelial cell     1
-2          cardiac muscle cell      Cardiomyocyte     1
-3                  native cell      Cardiomyocyte     1
-4           smooth muscle cell Smooth muscle cell     1
-5 fibroblast of cardiac tissue         Fibroblast     1
-6                   macrophage         Macrophage     1
 
+We also involve a clustering strategy. We adopt the approach following “The molecular cytoarchitecture of the adult mouse brain”. We cluster the cells for multiple rounds and achieve different levels of precision.
+```{r}
+cluster_df = multiple_clustering(counts, loop.max = 10, k = 50, min.cells = 100, num.hvg = 10,num.de = 10,logfc = 0.1, min.umi = 100, verbose = T)
+```
 
 
 # Our group
