@@ -6,6 +6,9 @@
 \usage{
 \S4method{show}{CellLabeler}(object)
 }
+\arguments{
+\item{object}{A celllabeler object}
+}
 \value{
 \code{show}: Prints summary to \code{\link[base]{stdout}} and invisibly returns \code{NULL}
 }

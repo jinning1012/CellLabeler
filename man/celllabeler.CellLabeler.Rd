@@ -28,6 +28,8 @@
 
 \item{features}{Feature names. Default is NULL, then all features will be used.}
 
+\item{markers}{A list of markers; names of the list should be cell type names;}
+
 \item{sample.var}{Column names of sample information in metadata.}
 
 \item{cluster.var}{Column names of cluster information in metadata.}
@@ -42,11 +44,15 @@
 
 \item{min.ccells}{Minimum number of cells in each cluster required. Default is 10.}
 
+\item{max.cellsp}{Maximum downsamplng ratio (from 0 to 1); if NULL than all cells will be used in computation}
+
 \item{up.thr}{Numberic value in \link{0,1} as the proportion of the remaining clusters in which a gene is upregulated in the interested group compared with it. Highter, the more strict. Default 0.9.}
 
 \item{mod}{Character as "combine" or "all", specifying if combining similar clusters or not before DE test. Default is "combine"}
 
 \item{num.core}{Number of cores in multi-threaded running. Default is 1.}
+
+\item{verbose}{Bool indicator to print the messages}
 }
 \value{
 object A CellLabeler object

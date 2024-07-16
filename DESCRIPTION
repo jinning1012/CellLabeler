@@ -1,5 +1,5 @@
 Package: CellLabeler
-Title: CellLabeler: Automatical unique marker gene detection and cell type annotation in human multi-organs in single-cell resolved transcriptomics data.
+Title: CellLabeler: Automatical unique marker gene detection and cell type annotation in human multi-organs in single-cell resolved transcriptomics data
 Version: 1.0.0
 Author: Jin Ning, Yuhan Zhao, Xiya Guo, Shiquan Sun.
 Maintainer: Jin Ning <newlife1012@stu.xjtu.edu.cn>
@@ -18,7 +18,9 @@ Imports:
     utils, 
     stats, 
     foreach, 
-    Seurat
+    Seurat,
+    FNN,
+    coop
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1

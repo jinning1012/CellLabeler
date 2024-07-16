@@ -12,16 +12,21 @@
 #' Run CellLabeler to detect uniquely expressed marker genes and perform automatic cell type annotation in scRNA-seq data analysis.
 #' 
 #' @param object Gene expression raw count matrix
+#' @param markers A list of markers; names of the list should be cell type names; 
 #' @param sample.id Character vectors of sample information for each cell. 
 #' @param cluster.id Character vectors of cluster information for each cell. 
 #' @param similar.gene Integer value as the number of top expressed genes in considering combining clusters before DE test
 #' @param similar.pct Numeric value in [0,1] as the threshold to combine clusters before DE test when either two cluster have enough overlapped highly expressed genes. Default is 0.8.
 #' @param lfc Limit testing to genes which show the maximum on average X-fold difference (log-scale) between the interested clusters and the rest others. Default is 0.5.
 #' @param min.ccells Minimum number of cells in each cluster required. Default is 10.
+#' @param max.cellsp Maximum downsamplng ratio (from 0 to 1); if NULL than all cells will be used in computation
 #' @param max.genes Maximum number of highly expressed genes in each cluster required. Default is 100.
 #' @param mod Character as "combine" or "all", specifying if combining similar clusters or not before DE test. Default is "combine"
 #' @param up.thr Numberic value in [0,1] as the proportion of the remaining clusters in which a gene is upregulated in the interested group compared with it. Highter, the more strict. Default 0.9.
 #' @param num.core Number of cores in multi-threaded running. Default is 1.
+#' @param verbose Bool indicator to print the messages
+#' 
+#' @return A list of "ude", "prediction", "ModelScores" and "ModelFits"
 #' 
 #' @importFrom igraph graph_from_adjacency_matrix components
 #' @importFrom Seurat NormalizeData
@@ -44,7 +49,6 @@ celllabeler.default = function(object,
                                     up.thr = 0.9,
                   					num.core = 1, 
                   					verbose = TRUE) {
-    suppressPackageStartupMessages({require("dplyr")})
     ## load in counts ##
     counts = object
     data = NormalizeData(counts, verbose = verbose)
@@ -53,7 +57,7 @@ celllabeler.default = function(object,
     ##           down sample cells if required (optional)        ##
     ##***********************************************************##
     if(!is.null(max.cellsp)){
-        if(class(max.cellsp)!= "numeric"){
+        if(!inherits(max.cellsp, "numeric")){
             stop("The input down-sampling proportion is not numeric value.")
         }
         if(max.cellsp > 1){
@@ -222,16 +226,19 @@ celllabeler.default = function(object,
 #' @param object A CellLabeler object 
 #' 
 #' @param features Feature names. Default is NULL, then all features will be used.
+#' @param markers A list of markers; names of the list should be cell type names; 
 #' @param sample.var Column names of sample information in metadata. 
 #' @param cluster.var Column names of cluster information in metadata. 
 #' @param similar.gene Integer value as the number of top expressed genes in considering combining clusters before DE test
 #' @param similar.pct Numeric value in [0,1] as the threshold to combine clusters before DE test when either two cluster have enough overlapped highly expressed genes. Default is 0.8.
 #' @param lfc Limit testing to genes which show the maximum on average X-fold difference (log-scale) between the interested clusters and the rest others. Default is 0.5.
 #' @param min.ccells Minimum number of cells in each cluster required. Default is 10.
+#' @param max.cellsp Maximum downsamplng ratio (from 0 to 1); if NULL than all cells will be used in computation
 #' @param max.genes Maximum number of highly expressed genes in each cluster required. Default is 100.
 #' @param mod Character as "combine" or "all", specifying if combining similar clusters or not before DE test. Default is "combine"
 #' @param up.thr Numberic value in [0,1] as the proportion of the remaining clusters in which a gene is upregulated in the interested group compared with it. Highter, the more strict. Default 0.9.
 #' @param num.core Number of cores in multi-threaded running. Default is 1.
+#' @param verbose Bool indicator to print the messages
 #' 
 #' @return object A CellLabeler object
 #'
@@ -304,8 +311,8 @@ celllabeler.CellLabeler = function(object,
 #' 
 #' data(exampledata)
 #' meta.data = data.frame(sample = sample.id, cluster = cluster.id, row.names = colnames(counts))
-#' object = CreateCellLabelerObject(counts = counts, meta.data = meta.data)
-#' object = celllabeler(object=object, sample.var = "sample", cluster.var = "cluster", markers = markers, max.genes = 10)
+#' obj = CreateCellLabelerObject(counts = counts, meta.data = meta.data)
+#' obj = celllabeler(obj, sample.var = "sample", cluster.var = "cluster", markers = markers)
 #' 
 #' @rdname celllabeler
 #' @export celllabeler
@@ -331,11 +338,10 @@ celllabeler = function(object, ...) {
 #' 
 #' @export 
 
-AddMarkers = function(object, markers, cluster.var = NULL, cluster.id = NULL, 
-                        ...){
+AddMarkers = function(object, markers, cluster.var = NULL, cluster.id = NULL){
 
     ### check markers and perform cell type annotation ###
-    if(class(x = object) !="CellLabeler"){
+    if(!inherits(object,"CellLabeler")){
         stop("Input object should be a CellLabeler object.")
     }
 

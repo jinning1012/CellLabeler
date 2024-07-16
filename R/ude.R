@@ -66,6 +66,7 @@ CombinePValues = function(pvalues, weights=NULL){
 #' @param use.umi Regress on UMI count data
 #' @param verbose Display a progress bar
 #' 
+#' @importFrom stats as.formula glm lm p.adjust pcauchy predict residuals
 #' 
 #' @export 
 #' 
@@ -132,9 +133,6 @@ RegressOutMatrix = function(data.expr,
   ## Make results matrix
   data.resid = matrix(nrow = nrow(x = data.expr), ncol = ncol(x = data.expr) )
   
-  # if (verbose) {
-  #   pb = txtProgressBar(char = '=', style = 3, file = stderr())
-  # }## end fi
   
   for (i in 1:length(x = features.regress)) {
     x = features.regress[i]
@@ -150,15 +148,9 @@ RegressOutMatrix = function(data.expr,
         type = 'pearson'))
     
     data.resid[i, ] = regression.mat
-    # if (verbose) {
-    #   setTxtProgressBar(pb = pb, value = i / length(x = features.regress))
-    # }## end fi
+    
 
   }## end for
-  
-  if (verbose) {
-    close(con = pb)
-  }## end fi
   
   ## start if
   if (use.umi) {
@@ -181,8 +173,9 @@ RegressOutMatrix = function(data.expr,
 #' @param verbose Bool variable to indicate if print the message.
 #' 
 #' @importFrom utils combn 
-#' 
-#' 
+#' @import logistf
+#' @import foreach
+#' @import doParallel
 #' @export
 #' 
 #' 
@@ -193,12 +186,12 @@ FindAllUniqueMarkers = function(data.use,
                                  verbose = T,
                                  num.core = 1){
   
-  suppressPackageStartupMessages({
-    require(logistf)
-    require(dplyr)
-    require(doParallel)
-    #require(utils)
-  })
+  # suppressPackageStartupMessages({
+  #   require(logistf)
+  #   require(dplyr)
+  #   require(doParallel)
+  #   #require(utils)
+  # })
   
   ## ******************************************* ##
   ##       function for one comparison           ##
@@ -247,6 +240,7 @@ FindAllUniqueMarkers = function(data.use,
         }) # END tryCatch
         return(res_tmp)
       }# END foreach
+
       output_idx = which(unlist(lapply(res_firth_tmp, length)) == 2)
       res_firth_tmp = res_firth_tmp[output_idx]
       res_firth_tmp = do.call(rbind,res_firth_tmp)
@@ -498,6 +492,7 @@ ComputePrediction = function(de_model, marker_list, PCT_mat){
 #' @return A ggplot displaying prediction scores 
 #' 
 #' @import ggplot2
+#' @importFrom dplyr group_by
 #' 
 #' @export
 #' 

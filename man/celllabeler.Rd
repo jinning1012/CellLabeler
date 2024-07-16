@@ -18,8 +18,8 @@ Unique marker gene detection and automatic cell type annotation
 
 data(exampledata)
 meta.data = data.frame(sample = sample.id, cluster = cluster.id, row.names = colnames(counts))
-object = CreateCellLabelerObject(counts = counts, meta.data = meta.data)
-object = celllabeler(object=object, sample.var = "sample", cluster.var = "cluster", markers = markers, max.genes = 10)
+obj = CreateCellLabelerObject(counts = counts, meta.data = meta.data)
+obj = celllabeler(obj, sample.var = "sample", cluster.var = "cluster", markers = markers)
 
 }
 \concept{data-access}

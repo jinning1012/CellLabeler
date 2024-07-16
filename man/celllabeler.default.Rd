@@ -24,6 +24,8 @@
 \arguments{
 \item{object}{Gene expression raw count matrix}
 
+\item{markers}{A list of markers; names of the list should be cell type names;}
+
 \item{sample.id}{Character vectors of sample information for each cell.}
 
 \item{cluster.id}{Character vectors of cluster information for each cell.}
@@ -36,6 +38,8 @@
 
 \item{min.ccells}{Minimum number of cells in each cluster required. Default is 10.}
 
+\item{max.cellsp}{Maximum downsamplng ratio (from 0 to 1); if NULL than all cells will be used in computation}
+
 \item{max.genes}{Maximum number of highly expressed genes in each cluster required. Default is 100.}
 
 \item{mod}{Character as "combine" or "all", specifying if combining similar clusters or not before DE test. Default is "combine"}
@@ -43,6 +47,11 @@
 \item{up.thr}{Numberic value in \link{0,1} as the proportion of the remaining clusters in which a gene is upregulated in the interested group compared with it. Highter, the more strict. Default 0.9.}
 
 \item{num.core}{Number of cores in multi-threaded running. Default is 1.}
+
+\item{verbose}{Bool indicator to print the messages}
+}
+\value{
+A list of "ude", "prediction", "ModelScores" and "ModelFits"
 }
 \description{
 Run CellLabeler to detect uniquely expressed marker genes and perform automatic cell type annotation in scRNA-seq data analysis.

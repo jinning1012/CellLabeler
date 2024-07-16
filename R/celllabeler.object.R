@@ -122,7 +122,7 @@ CreateCellLabelerObject = function(counts, meta.data, ude.result = NULL, project
 
 #' Overview of a Celllabeler object
 #' @describeIn CellLabeler-methods Overview of a \code{CellLabeler} object
-#'
+#' @param object A celllabeler object
 #' @return \code{show}: Prints summary to \code{\link[base]{stdout}} and invisibly returns \code{NULL}
 #'
 #' @importFrom methods show
@@ -153,7 +153,7 @@ setMethod(f = "show",
 #' @export
 #'  
 AddPredictionToMeta = function(object, cluster.var, prediction.var = "prediction"){
-    if(class(x = object) !="CellLabeler"){
+    if(!inherits(object,"CellLabeler")){
         stop("Input object should be a CellLabeler object.")
     }
 

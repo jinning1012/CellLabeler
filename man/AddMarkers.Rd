@@ -4,7 +4,7 @@
 \alias{AddMarkers}
 \title{Add markers to celllabeler object with ude and perform prediction}
 \usage{
-AddMarkers(object, markers, cluster.var = NULL, cluster.id = NULL, ...)
+AddMarkers(object, markers, cluster.var = NULL, cluster.id = NULL)
 }
 \arguments{
 \item{object}{A Celllabeler object}
