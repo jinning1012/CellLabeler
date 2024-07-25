@@ -36,10 +36,10 @@
 #' @export
 #' 
 celllabeler.default = function(object, 
+                                    sample.id,
+                  					cluster.id,
                                     markers = NULL,
-                                    sample.id = NULL,
-                  					cluster.id = NULL,
-                  					similar.gene = 20,
+                                    similar.gene = 20,
                   					similar.pct = 0.8,
                   					lfc = 0.5,
                   					min.ccells = 10,
@@ -131,7 +131,6 @@ celllabeler.default = function(object,
         cat("## Do not check and combine clusters before DE test.\n")
     } ## end mod fi
 
-    rm(clusters,TopGenes_bylogFC,comb_mat, comb_overlap, adj_matrix, g, components_g, membership)
     
 
     ##********************************************************##
@@ -247,10 +246,10 @@ celllabeler.default = function(object,
 #' @export
 #' 
 celllabeler.CellLabeler = function(object, 
+                                    sample.var,
+                                    cluster.var,
                                     features = NULL,
                                     markers = NULL,
-                                    sample.var = "sample",
-                                    cluster.var = "cluster",
                                     similar.gene = 20,
                                     similar.pct = 0.8,
                                     lfc = 0.5,
@@ -326,54 +325,40 @@ celllabeler = function(object, ...) {
 
 
 
-#' Add markers to celllabeler object with ude and perform prediction
-#' @param object A Celllabeler object
+#' Add markers to celllabeler ude results and perform prediction
+#' @param res A celllabeler output list involoving at least ModelFits
+#' @param counts A gene expression raw count matrix
 #' @param markers Marker list with name being cell type names
-#' @param cluster.var Column names of cluster information in metadata. 
 #' @param cluster.id Character vectors of cluster information for each cell. 
 #' 
-#' @return A celllabeler object
+#' @return A celllabeler output list involoving predictions
 #' 
 #' @author Jin ning
 #' 
 #' @export 
-
-AddMarkers = function(object, markers, cluster.var = NULL, cluster.id = NULL){
-
-    ### check markers and perform cell type annotation ###
-    if(!inherits(object,"CellLabeler")){
-        stop("Input object should be a CellLabeler object.")
-    }
-
-    if(is.null(object@ModelFits)){
+AddMarkers = function(res, counts, markers, cluster.id){
+    ## check the input res must involve ModelFits
+    if(is.null(res$ModelFits)){
         stop("Please run celllabeler() first to identify marker genes.")
     }
 
-    counts = object@counts
-    modelfits = object@ModelFits
-
-
-    if(is.null(cluster.var) & is.null(cluster.id)){
-        stop("Please input cluster.var or cluster.id.")
+    if(!is.null(res$prediction)){
+        cat("There is already prediction results and we then update and  the original results.\n")
     }
+    
+    modelfits = res$ModelFits
 
-    if(is.null(cluster.id) & (!is.null(cluster.var))){
-        cluster.id = object@meta.data[,cluster.var] %>% as.character()
-
-        ## combine cluster.id according to ude results
-        modelfits_cluster = names(modelfits)
-        input_cluster_type = unique(as.character(cluster.id))
-        if(!setequal(modelfits_cluster,input_cluster_type)){
-            ## we need to do combination
-            modelfits_cluster = modelfits_cluster[grep(" & ",modelfits_cluster)]
-            for(icomb in modelfits_cluster){
-                index_icomb = which(cluster.id %in% strsplit(icomb," & ")[[1]])
-                cluster.id[index_icomb] = icomb
-            }
+    ## combine cluster.id according to ude results
+    modelfits_cluster = names(modelfits)
+    input_cluster_type = unique(as.character(cluster.id))
+    if(!setequal(modelfits_cluster,input_cluster_type)){
+        ## we need to do combination
+        modelfits_cluster = modelfits_cluster[grep(" & ",modelfits_cluster)]
+        for(icomb in modelfits_cluster){
+            index_icomb = which(cluster.id %in% strsplit(icomb," & ")[[1]])
+            cluster.id[index_icomb] = icomb
         }
     }
-
-    
 
     ## here, the input counts are filtered in the steps of CreateCellLabelerObject()
     ## while the input modelfits are run on all raw genes
@@ -386,9 +371,9 @@ AddMarkers = function(object, markers, cluster.var = NULL, cluster.id = NULL){
     pct = ComputePCT(counts,cluster.id,input_genes)
     pred = ComputePrediction(modelfits,markers,pct)
 
-    object@prediction = pred$predict
-    object@ModelScores = pred$scores
-    return(object)
+    res$prediction = pred$predict
+    res$ModelScores = pred$scores
+    return(res)
 }
 ##############################################################################################
 

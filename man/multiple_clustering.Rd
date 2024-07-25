@@ -7,6 +7,8 @@
 multiple_clustering(
   counts,
   loop.max = 10,
+  pca = F,
+  npc = 20,
   k = 50,
   min.cells = 100,
   num.hvg = 10,
@@ -20,6 +22,10 @@ multiple_clustering(
 \item{counts}{A gene by cell raw count gene expression matrix}
 
 \item{loop.max}{Integer for maximum iteration rounds; default is 10}
+
+\item{pca}{Bool indicator for performing PCA after variable gene selection}
+
+\item{npc}{Number of pc loadings; default is 20}
 
 \item{k}{Number of the nearest neighbors in knn; default is 50}
 

@@ -6,10 +6,10 @@
 \usage{
 \method{celllabeler}{CellLabeler}(
   object,
+  sample.var,
+  cluster.var,
   features = NULL,
   markers = NULL,
-  sample.var = "sample",
-  cluster.var = "cluster",
   similar.gene = 20,
   similar.pct = 0.8,
   lfc = 0.5,
@@ -26,13 +26,13 @@
 \arguments{
 \item{object}{A CellLabeler object}
 
-\item{features}{Feature names. Default is NULL, then all features will be used.}
-
-\item{markers}{A list of markers; names of the list should be cell type names;}
-
 \item{sample.var}{Column names of sample information in metadata.}
 
 \item{cluster.var}{Column names of cluster information in metadata.}
+
+\item{features}{Feature names. Default is NULL, then all features will be used.}
+
+\item{markers}{A list of markers; names of the list should be cell type names;}
 
 \item{similar.gene}{Integer value as the number of top expressed genes in considering combining clusters before DE test}
 

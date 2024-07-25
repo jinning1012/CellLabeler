@@ -7,6 +7,8 @@
 update_clustering(
   counts,
   cluster.id,
+  pca = F,
+  npc = 20,
   k = 50,
   num.hvg = 10,
   num.de = 10,
@@ -19,6 +21,10 @@ update_clustering(
 \item{counts}{A raw count gene expression matrix; rows are genes and columns are cells}
 
 \item{cluster.id}{A character vectors defining the original clustering labels}
+
+\item{pca}{Bool indicator for performing PCA after variable gene selection}
+
+\item{npc}{Number of pc loadings; default is 20}
 
 \item{k}{Number of the nearest neighbors in knn; default is 50}
 

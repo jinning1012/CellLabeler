@@ -2,24 +2,24 @@
 % Please edit documentation in R/CellLabeler.R
 \name{AddMarkers}
 \alias{AddMarkers}
-\title{Add markers to celllabeler object with ude and perform prediction}
+\title{Add markers to celllabeler ude results and perform prediction}
 \usage{
-AddMarkers(object, markers, cluster.var = NULL, cluster.id = NULL)
+AddMarkers(res, counts, markers, cluster.id)
 }
 \arguments{
-\item{object}{A Celllabeler object}
+\item{res}{A celllabeler output list involoving at least ModelFits}
+
+\item{counts}{A gene expression raw count matrix}
 
 \item{markers}{Marker list with name being cell type names}
-
-\item{cluster.var}{Column names of cluster information in metadata.}
 
 \item{cluster.id}{Character vectors of cluster information for each cell.}
 }
 \value{
-A celllabeler object
+A celllabeler output list involoving predictions
 }
 \description{
-Add markers to celllabeler object with ude and perform prediction
+Add markers to celllabeler ude results and perform prediction
 }
 \author{
 Jin ning

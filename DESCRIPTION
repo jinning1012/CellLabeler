@@ -20,6 +20,8 @@ Imports:
     foreach, 
     Seurat,
     FNN,
+    presto,
+    irlba,
     coop
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

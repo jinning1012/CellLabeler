@@ -186,12 +186,6 @@ FindAllUniqueMarkers = function(data.use,
                                  verbose = T,
                                  num.core = 1){
   
-  # suppressPackageStartupMessages({
-  #   require(logistf)
-  #   require(dplyr)
-  #   require(doParallel)
-  #   #require(utils)
-  # })
   
   ## ******************************************* ##
   ##       function for one comparison           ##
@@ -285,6 +279,7 @@ FindAllUniqueMarkers = function(data.use,
     res_name = paste0(ident.perm[1,i],'_versus_',ident.perm[2,i])
     if(!(res_name %in% names(all_res_list))){
       res_tmp = all_res_list[[paste0(ident.perm[2,i],'_versus_',ident.perm[1,i])]]
+      ## inverse the effect
       res_tmp[,1] = -res_tmp[,1]
       all_res_list[[res_name]] = res_tmp
       rm(res_name)
@@ -365,7 +360,8 @@ ComputePCT = function(counts, cluster.id = NULL, sub.genes = NULL){
     for (ig in seq(length(groups))) {
       group = groups[ig]
       cells.1 = which(cluster.id == group)
-      sub_cnt = matrix(counts[,cells.1], ncol = length(cells.1))
+      #sub_cnt = matrix(counts[,cells.1], ncol = length(cells.1))
+      sub_cnt = counts[,cells.1, drop = F]
       out[,ig] = apply(sub_cnt, 1, function(gene){
         length(which(gene > 0))/length(gene)
       })
@@ -497,9 +493,7 @@ ComputePrediction = function(de_model, marker_list, PCT_mat){
 #' @export
 #' 
 prediction_plot = function(object){
-  # suppressPackageStartupMessages({
-  #   require(ggplot2)
-  # })
+  
   score_list = object@ModelScores
   if(is.null(score_list)){
     stop("## The input object has not been with prediction information.")
@@ -553,5 +547,47 @@ prediction_plot = function(object){
 allGenes = function(de_model){
   out = lapply(de_model, rownames) %>% unlist %>% unique()
   return(out)
+}
+
+
+
+
+
+#' Select and rank the ude to build up a list of ude for each clusters
+#' mainly used in ude benchmark
+#' @param de_model A list of output from FindAllUniqueMarkers()
+#' @param counts Raw count gene expression matrix; rows are genes and columns as cells
+#' @param cluster.id A vector of cluster labels for cells; same as input in FindAllUniqueMarkers(); if combined, then this cluster.id is the combined cluster label
+#' 
+#' @return A list of combined statistic for each cluster
+#' 
+#' @export 
+#' 
+RankAllUniqueMarkers = function(de_model, counts, cluster.id){
+  if(!is.list(de_model)){
+    stop("TidyUpAllMarkers() input must be a list format.")
+  }
+  
+  ## compute pct mat
+  PCT_mat = ComputePCT(counts, cluster.id = cluster.id, sub.genes = allGenes(de_model))
+  
+  ## compute gene score
+  cluster_type = sort(unique(as.character(cluster.id)))
+  output_list = list()
+  for (i.celltype in cluster_type) {
+    Cbar = ComputeGeneScore(de_model,i.celltype,PCT_mat)
+    Cbar = Cbar[Cbar > 0] # while some statistic will be negative; ningjin 2023-9-5
+    Cbar = sort(Cbar, decreasing = T)
+    de = names(Cbar)
+    tmp = de_model[[i.celltype]]
+    ## record expr pct
+    tmp$expr_pct = PCT_mat[tmp$gene,i.celltype]
+    ## record gene score
+    tmp$genescore = -1
+    tmp$genescore[match(de, tmp$gene)] = Cbar
+    tmp = tmp %>% arrange(p.adjust, -genescore)
+    output_list[[i.celltype]] = tmp
+  }
+  return(output_list)
 }
 

@@ -6,9 +6,9 @@
 \usage{
 \method{celllabeler}{default}(
   object,
+  sample.id,
+  cluster.id,
   markers = NULL,
-  sample.id = NULL,
-  cluster.id = NULL,
   similar.gene = 20,
   similar.pct = 0.8,
   lfc = 0.5,
@@ -24,11 +24,11 @@
 \arguments{
 \item{object}{Gene expression raw count matrix}
 
-\item{markers}{A list of markers; names of the list should be cell type names;}
-
 \item{sample.id}{Character vectors of sample information for each cell.}
 
 \item{cluster.id}{Character vectors of cluster information for each cell.}
+
+\item{markers}{A list of markers; names of the list should be cell type names;}
 
 \item{similar.gene}{Integer value as the number of top expressed genes in considering combining clusters before DE test}
 

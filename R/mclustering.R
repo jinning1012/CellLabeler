@@ -40,6 +40,8 @@ select_hvg = function(counts, min.pct = 0.1){
 #' 
 #' @param counts A raw count gene expression matrix; rows are genes and columns are cells
 #' @param cluster.id A character vectors defining the original clustering labels
+#' @param pca Bool indicator for performing PCA after variable gene selection
+#' @param npc Number of pc loadings; default is 20
 #' @param k Number of the nearest neighbors in knn; default is 50
 #' @param num.hvg Minimum number of HVGs detected for the cluster to be further spliting; default is 10
 #' @param num.de Minimum number of DEGs detected for each update cluster; default is 10
@@ -52,10 +54,11 @@ select_hvg = function(counts, min.pct = 0.1){
 #' @import igraph
 #' @importFrom FNN get.knnx
 #' @importFrom coop cosine
+#' @importFrom irlba irlba
 #' 
 #' @export 
 #' 
-update_clustering = function(counts, cluster.id, k = 50, num.hvg = 10, num.de = 10, logfc = 0.1, min.umi = 100, verbose = T){
+update_clustering = function(counts, cluster.id, pca = F, npc = 20, k = 50, num.hvg = 10, num.de = 10, logfc = 0.1, min.umi = 100, verbose = T){
   set.seed(1234)
   ## scale the data ##
   counts = counts[rowSums(counts)>min.umi,]
@@ -86,9 +89,24 @@ update_clustering = function(counts, cluster.id, k = 50, num.hvg = 10, num.de = 
       next
     }
 
+    ## the above data is actually raw count matrix
+    ## we use the centered and scaled data for downstream analysis
+    ## keep the data for wilcoxon
     data = scaledata[hvgs,cluster.id == i.type, drop = FALSE]
-    #cosine_similarity = coop::cosine(data)
-    cosine_similarity = cosine(data)
+    
+    ## perform pca if request
+    ## library(irlba)
+    if(pca){
+      if(verbose) cat("Performing PCA to obtain the fist",npc,"PCs.\n")
+      pca_results = irlba(t(data), nv = npc, nu = npc, center = FALSE)
+      pca_loadings = t(data) %*% pca_results$v[, 1:npc]
+      data_pc = t(pca_loadings)
+      rownames(data_pc) = paste0("PC",1:nrow(data_pc))
+    }else{
+      data_pc = data
+    }
+
+    cosine_similarity = cosine(data_pc)
     ## knn
     nn.index = get.knnx(cosine_similarity,cosine_similarity,
                         k = k + 1,
@@ -100,11 +118,11 @@ update_clustering = function(counts, cluster.id, k = 50, num.hvg = 10, num.de = 
       adj_matrix[nn.index[[i]], i] = 1 
     }
     rownames(adj_matrix) = colnames(adj_matrix) = colnames(data)
-    g = igraph::graph_from_adjacency_matrix(adj_matrix, mode = "undirected")
+    g = graph_from_adjacency_matrix(adj_matrix, mode = "undirected")
 
     ## compute weights by jaccard index
     edge_list = as_edgelist(g)
-    weights_jac = igraph::similarity(g,method ="jaccard")
+    weights_jac = similarity(g,method ="jaccard")
     rownames(weights_jac) = colnames(weights_jac) = colnames(data)
     weights = sapply(1:nrow(edge_list), function(i){weights_jac[edge_list[i,1],edge_list[i,2]]})
     E(g)$weight = weights
@@ -116,14 +134,15 @@ update_clustering = function(counts, cluster.id, k = 50, num.hvg = 10, num.de = 
       membership = membership(cl)
 
       ## judgement ##
-      ## 1. cluster proportion
+
+      ## 1.cluster proportion
       flag1=length(unique(membership))>1
       cluster_ab = as.numeric(sort(table(membership), decreasing=T))
       flag2 = (as.numeric(cluster_ab[1]/cluster_ab[2]) < 20)
 
       if(flag1 & flag2){
         ## we test the DE only when cluster proportion fits the request
-        ## 2. one versus the rest DE using wilcoxon
+        ## 2.one versus the rest DE using wilcoxon
         wil_de = wilcoxauc(data, membership)
         wil_de_filtered = lapply(unique(membership), function(i){
           flag_de = list(
@@ -131,7 +150,6 @@ update_clustering = function(counts, cluster.id, k = 50, num.hvg = 10, num.de = 
             wil_de$padj < 0.05,
             wil_de$logFC >= logfc)
           flag_de = Reduce("&",flag_de) 
-          #out = sum(flag_de)>round(0.01*nrow(data)) ## if more than 3 DE were found that means this cluster will be remained
           out = sum(flag_de) >= num.de
           return(out) 
         }) %>% unlist
@@ -140,7 +158,6 @@ update_clustering = function(counts, cluster.id, k = 50, num.hvg = 10, num.de = 
         if(flag1 & flag2 & flag3){
           if(verbose) cat("Finish at Louvain:",resolution,"\n")
           break;
-          
         }
       }#end for fi
     }#end for resolution
@@ -168,6 +185,8 @@ update_clustering = function(counts, cluster.id, k = 50, num.hvg = 10, num.de = 
 #' 
 #' @param counts A gene by cell raw count gene expression matrix
 #' @param loop.max Integer for maximum iteration rounds; default is 10
+#' @param pca Bool indicator for performing PCA after variable gene selection
+#' @param npc Number of pc loadings; default is 20
 #' @param k Number of the nearest neighbors in knn; default is 50
 #' @param min.cells Minimum size of the cluster to be further spliting; default is 100
 #' @param num.hvg Minimum number of HVGs detected for the cluster to be further spliting; default is 10
@@ -182,7 +201,7 @@ update_clustering = function(counts, cluster.id, k = 50, num.hvg = 10, num.de = 
 #' @export
 #' 
 #' 
-multiple_clustering = function(counts, loop.max = 10, k = 50, min.cells = 100, num.hvg = 10,num.de = 10,logfc = 0.1, min.umi = 100, verbose = T){
+multiple_clustering = function(counts, loop.max = 10, pca = F, npc = 20, k = 50, min.cells = 100, num.hvg = 10,num.de = 10,logfc = 0.1, min.umi = 100, verbose = T){
   ## initial a cluster label 
   l0 = rep("0",ncol(counts))
   names(l0) = colnames(counts)
@@ -197,6 +216,8 @@ multiple_clustering = function(counts, loop.max = 10, k = 50, min.cells = 100, n
     res = update_clustering(
         counts = counts,
         cluster.id = l0, 
+        pca = pca,
+        npc = npc,
         k = k, 
         num.hvg = num.hvg, 
         num.de = num.de, 
@@ -211,7 +232,6 @@ multiple_clustering = function(counts, loop.max = 10, k = 50, min.cells = 100, n
       continue_loop = F
       cat("No valid categories were obtained from this round of clustering.\n")
     }else{
-
       ## transfer label as "1" "2" "3"...
       unique_values = unique(l1[!is.na(l1)])
       l1new = as.character(match(l1, unique_values))
