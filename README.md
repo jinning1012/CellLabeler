@@ -26,7 +26,9 @@ object = celllabeler(object, sample.var = "sample", cluster.var = "cluster",
   markers = markers, num.core = 10)
 object@prediction
 ```
-The output is a CellLabeler object involoving ude (uniquely differential expressed genes), prediction (a dataframe of cluster and predicted cell type infomation), ModelFits (full statistic results of pairwise Firth LR test) and ModelScores (evaluation score of each potential cell type). Usually we save there results by "res = list(ude = object@ude, prediction = object@prediction, ModelScores = object@ModelScores, ModelFits = object@ModelFits)". Then we offer a function to update the prediction by giving a new marker list.
+The output is a CellLabeler object involoving ude (uniquely differential expressed genes), prediction (a dataframe of cluster and predicted cell type infomation), ModelFits (full statistic results of pairwise Firth LR test) and ModelScores (evaluation score of each potential cell type).
+
+Usually we save these results by "res = list(ude = object@ude, prediction = object@prediction, ModelScores = object@ModelScores, ModelFits = object@ModelFits)". Then we offer a function to update the prediction by giving a new marker list.
 
 ```{r}
 res = AddMarkers(res = res, counts = counts, markers = markers, cluster.id = cluster.id)
