@@ -26,6 +26,11 @@ object = celllabeler(object, sample.var = "sample", cluster.var = "cluster",
   markers = markers, num.core = 10)
 object@prediction
 ```
+The output is a CellLabeler object involoving ude (uniquely differential expressed genes), prediction (a dataframe of cluster and predicted cell type infomation), ModelFits (full statistic results of pairwise Firth LR test) and ModelScores (evaluation score of each potential cell type). Usually we save there results by "res = list(ude = object@ude, prediction = object@prediction, ModelScores = object@ModelScores, ModelFits = object@ModelFits)". Then we offer a function to update the prediction by giving a new marker list.
+
+```{r}
+res = AddMarkers(res = res, counts = counts, markers = markers, cluster.id = cluster.id)
+```
 
 We also involve a clustering strategy. We adopt the approach following “The molecular cytoarchitecture of the adult mouse brain”. We cluster the cells for multiple rounds and achieve different levels of precision.
 ```{r}
