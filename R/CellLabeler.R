@@ -87,8 +87,11 @@ celllabeler.default = function(object,
     {
         idx1 = which(cluster.id == ident.1)
         idx2 = which(cluster.id != ident.1)
-        avg.ident.1 = log(x = rowMeans(x = exp(matrix(data[,idx1], ncol = length(idx1)))-1) + 1, base = 2) 
-        avg.ident.2 = log(x = rowMeans(x = exp(matrix(data[,idx2], ncol = length(idx2)))-1) + 1, base = 2)
+        #avg.ident.1 = log(x = rowMeans(x = exp(matrix(data[,idx1], ncol = length(idx1)))-1) + 1, base = 2) 
+        #avg.ident.2 = log(x = rowMeans(x = exp(matrix(data[,idx2], ncol = length(idx2)))-1) + 1, base = 2)
+        avg.ident.1 = log(x = rowMeans(x = counts[,idx1, drop = F]) + 1, base = 2) 
+        avg.ident.2 = log(x = rowMeans(x = counts[,idx2, drop = F]) + 1, base = 2) 
+        
         log_foldchange = avg.ident.1 - avg.ident.2
         names(log_foldchange) = rownames(data)
         log_foldchange = log_foldchange[log_foldchange>0]
@@ -164,8 +167,8 @@ celllabeler.default = function(object,
         {
             idx1 = which(cluster.id == ident.1)
             idx2 = which(cluster.id != ident.1)
-            avg.ident.1 = log(x = rowMeans(x = exp(matrix(data[,idx1], ncol = length(idx1)))-1) + 1, base = 2) 
-            avg.ident.2 = log(x = rowMeans(x = exp(matrix(data[,idx2], ncol = length(idx2)))-1) + 1, base = 2)
+            avg.ident.1 = log(x = rowMeans(x = counts[,idx1,drop = F]) + 1, base = 2) 
+            avg.ident.2 = log(x = rowMeans(x = counts[,idx2,drop = F]) + 1, base = 2)
             log_foldchange = avg.ident.1 - avg.ident.2
             names(log_foldchange) = rownames(data)
             log_foldchange = log_foldchange[log_foldchange>lfc]
@@ -181,8 +184,8 @@ celllabeler.default = function(object,
 
         gene.use = unique(unlist(TopGenes_bylogFC))
         gene.use = gene.use[!is.na(gene.use)]
-        counts = counts[gene.use,]
-        data = data[gene.use,]
+        counts = counts[gene.use,,drop = F]
+        data = data[gene.use,,drop = F]
         rm(TopGenes_bylogFC)
         
     } ## end max gene fi
@@ -190,12 +193,15 @@ celllabeler.default = function(object,
 	##########################################################
 	cat(paste("## ===== CellLabeler INPUT INFORMATION ====## \n"))
 	cat(paste("## number of total cells: ", ncol(data),"\n"))
-	cat(paste("## number of total features: ", nrow(data),"\n"))
+	cat(paste("## number of total features: ", length(gene.use),"\n"))
     cat(paste("## number of cell clusters: ", length(unique(cluster.id)),"\n"))
 	cat(paste("## number of cores: ", num.core,"\n"))
 	cat(paste("## ========== END INFORMATION ============## \n"))
 	cat("\n")
 	
+    if(nrow(data) < 20){
+        stop("To few genes were adopted in DE testing!")
+    }
 	
 	##***********************************************************##
 	##                      main function                        ##
