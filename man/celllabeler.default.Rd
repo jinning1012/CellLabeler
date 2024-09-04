@@ -22,7 +22,7 @@
 )
 }
 \arguments{
-\item{object}{Gene expression raw count matrix}
+\item{object}{A raw count gene expression matrix}
 
 \item{sample.id}{Character vectors of sample information for each cell.}
 

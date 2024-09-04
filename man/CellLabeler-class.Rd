@@ -14,13 +14,19 @@ Each CellLabeler object has a number of slots which store information. Key slots
 
 \item{\code{data}}{Normalized gene matrix}
 
-\item{\code{meta.data}}{Cell-level metadata}
+\item{\code{scale.data}}{Scaled gene matrix}
 
-\item{\code{ModelFits}}{CellLabeler model fitting results}
+\item{\code{meta.data}}{A cell-level metadata dataframe}
 
-\item{\code{ude}}{CellLabeler detected uniquely differential expression genes}
+\item{\code{ude}}{A list of CellLabeler detected uniquely differential expression genes}
 
-\item{\code{prediction}}{CellLabeler prediction dataframe}
+\item{\code{ModelFits}}{A list of model fitting results in ude detection}
+
+\item{\code{ModelScores}}{A list of aggragated gene scores for each potential cell type}
+
+\item{\code{ModelMarkers}}{A dataframe of CellLabeler identified marker genes overlapped between clusters and potential cell type}
+
+\item{\code{prediction}}{A CellLabeler prediction dataframe}
 
 \item{\code{num.core}}{The number of core used in the package}
 }}

@@ -5,26 +5,25 @@
 \title{Create the CellLabeler object with filtering step}
 \usage{
 CreateCellLabelerObject(
-  counts,
+  counts = NULL,
+  data = NULL,
   meta.data,
   ude.result = NULL,
-  project = "CellLabeler",
   pct.cells = 0.005,
   min.cells = 0,
   min.features = 0,
   min.umi = 10,
-  num.core = 1,
-  res.path = NULL
+  num.core = 1
 )
 }
 \arguments{
-\item{counts}{Gene expression count matrix (data.frame), p x n -- p is the number of genes and n is the number of cells}
+\item{counts}{Gene expression count matrix (matrix), p x n -- p is the number of genes and n is the number of cells}
+
+\item{data}{Normalized gene expression matrix (p x n)}
 
 \item{meta.data}{Meta data dataframe to store batch and clustering information}
 
 \item{ude.result}{A list of results using celllabeler() on counts data}
-
-\item{project}{Character name specifying project name, default is "CellLabeler"}
 
 \item{pct.cells}{A numeric value indicating at least what proportion of cells the genes expressed on}
 
@@ -35,8 +34,6 @@ CreateCellLabelerObject(
 \item{min.umi}{A numeric value indicating at least what total counts of genes the cells expressed}
 
 \item{num.core}{Number of cores in parallel running}
-
-\item{res.path}{Path to save the results}
 }
 \value{
 A CellLabeler object with filtered gene expression matrix

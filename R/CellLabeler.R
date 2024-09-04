@@ -11,7 +11,7 @@
 #'
 #' Run CellLabeler to detect uniquely expressed marker genes and perform automatic cell type annotation in scRNA-seq data analysis.
 #' 
-#' @param object Gene expression raw count matrix
+#' @param object A raw count gene expression matrix
 #' @param markers A list of markers; names of the list should be cell type names; 
 #' @param sample.id Character vectors of sample information for each cell. 
 #' @param cluster.id Character vectors of cluster information for each cell. 
@@ -29,8 +29,8 @@
 #' @return A list of "ude", "prediction", "ModelScores" and "ModelFits"
 #' 
 #' @importFrom igraph graph_from_adjacency_matrix components
-#' @importFrom Seurat NormalizeData
 #' @importFrom Matrix rowMeans
+#' @importFrom Seurat NormalizeData
 #' @importFrom parallel mclapply
 #' 
 #' @export
@@ -51,6 +51,16 @@ celllabeler.default = function(object,
                   					verbose = TRUE) {
     ## load in counts ##
     counts = object
+
+    ## check gene names 
+    if(is.null(rownames(object))){
+        stop("The input gene expression matrix must have gene names.")
+    }
+    
+    if(is.null(colnames(object))){
+        stop("The input gene expression matrix must have cell names.")
+    }
+
     data = NormalizeData(counts, verbose = verbose)
 
     ##***********************************************************##
@@ -67,7 +77,7 @@ celllabeler.default = function(object,
 
         cat(paste0("Down-sampling for each cluster with the proportion ",max.cellsp,"...\n"))
         
-        idx.sample = sample(1:ncol(counts), ncol(counts) * max.cellsp)
+        idx.sample = sample(1:ncol(object), ncol(object) * max.cellsp)
         counts = counts[,idx.sample]
         data = data[,idx.sample]
         sample.id = sample.id[idx.sample]
@@ -87,13 +97,13 @@ celllabeler.default = function(object,
     {
         idx1 = which(cluster.id == ident.1)
         idx2 = which(cluster.id != ident.1)
-        #avg.ident.1 = log(x = rowMeans(x = exp(matrix(data[,idx1], ncol = length(idx1)))-1) + 1, base = 2) 
-        #avg.ident.2 = log(x = rowMeans(x = exp(matrix(data[,idx2], ncol = length(idx2)))-1) + 1, base = 2)
         avg.ident.1 = log(x = rowMeans(x = counts[,idx1, drop = F]) + 1, base = 2) 
         avg.ident.2 = log(x = rowMeans(x = counts[,idx2, drop = F]) + 1, base = 2) 
+        #avg.ident.1 = log(x = rowMeans(x = exp(data[,idx1, drop = F])-1) + 1, base = 2) 
+        #avg.ident.2 = log(x = rowMeans(x = exp(data[,idx2, drop = F])-1) + 1, base = 2)
         
         log_foldchange = avg.ident.1 - avg.ident.2
-        names(log_foldchange) = rownames(data)
+        names(log_foldchange) = rownames(counts)
         log_foldchange = log_foldchange[log_foldchange>0]
         output = sort(log_foldchange, decreasing = T)[seq(min(similar.gene, length(log_foldchange)))] %>% names
         return(output)
@@ -169,8 +179,10 @@ celllabeler.default = function(object,
             idx2 = which(cluster.id != ident.1)
             avg.ident.1 = log(x = rowMeans(x = counts[,idx1,drop = F]) + 1, base = 2) 
             avg.ident.2 = log(x = rowMeans(x = counts[,idx2,drop = F]) + 1, base = 2)
+            # avg.ident.1 = log(x = rowMeans(x = exp(data[,idx1,drop = F])-1) + 1, base = 2) 
+            # avg.ident.2 = log(x = rowMeans(x = exp(data[,idx2,drop = F])-1) + 1, base = 2)
             log_foldchange = avg.ident.1 - avg.ident.2
-            names(log_foldchange) = rownames(data)
+            names(log_foldchange) = rownames(counts)
             log_foldchange = log_foldchange[log_foldchange>lfc]
             if(length(log_foldchange)>0){
                 output = sort(log_foldchange, decreasing = T)[seq(min(max.genes, length(log_foldchange)))] %>% names
@@ -200,7 +212,7 @@ celllabeler.default = function(object,
 	cat("\n")
 	
     if(nrow(data) < 20){
-        stop("To few genes were adopted in DE testing!")
+        stop("To few genes (<20) were adopted in DE testing.")
     }
 	
 	##***********************************************************##
@@ -209,18 +221,18 @@ celllabeler.default = function(object,
     
     ude = FindAllUniqueMarkers(data,sample.id,cluster.id,up.thr,verbose,num.core)
     pct = ComputePCT(counts,cluster.id,allGenes(ude))
+    #pct = ComputePCT(data,cluster.id,allGenes(ude))
     if(is.null(markers)){
         ## no prediction but still computing gene score
         clusters = names(ude)
         deg = lapply(clusters,function(i.celltype) ComputeGeneScore(ude,i.celltype,pct) %>% names)
         names(deg) = clusters
-        pred = list(deg = deg)
+        pred = list(degs = deg)
     }else{
         pred = ComputePrediction(ude,markers,pct)
     }
     
-
-    out = list(ude=pred$deg,prediction = pred$predict, ModelScores = pred$scores, ModelFits=ude)
+    out = list(ude=pred$degs,prediction = pred$predict, ModelScores = pred$scores, ModelFits=ude, ModelMarkers = pred$markers)
 	return(out)
 }## end function 
 
@@ -241,12 +253,11 @@ celllabeler.default = function(object,
 #' @param max.cellsp Maximum downsamplng ratio (from 0 to 1); if NULL than all cells will be used in computation
 #' @param max.genes Maximum number of highly expressed genes in each cluster required. Default is 100.
 #' @param mod Character as "combine" or "all", specifying if combining similar clusters or not before DE test. Default is "combine"
-#' @param up.thr Numberic value in [0,1] as the proportion of the remaining clusters in which a gene is upregulated in the interested group compared with it. Highter, the more strict. Default 0.9.
+#' @param up.thr Numberic value in [0,1] as the proportion of the remaining clusters in which a gene is upregulated in the interested group compared with it. Higher, the more strict. Default 0.9.
 #' @param num.core Number of cores in multi-threaded running. Default is 1.
 #' @param verbose Bool indicator to print the messages
 #' 
 #' @return object A CellLabeler object
-#'
 #' @author Jin Ning
 #' 
 #' @export
@@ -274,12 +285,20 @@ celllabeler.CellLabeler = function(object,
         }
 	}## end fi
 	
-	## counts
+	## extract data slot ##
     counts = object@counts
+    data = object@data
+
+    # if(is.null(data)){
+    #     if(verbose) print("Normalization on raw count data.")
+    #     data = NormalizeData(counts, verbose = verbose)
+    # }
+
     if(!is.null(features)){
         cat("## Run with specified features ...\n")
-        counts = counts[features,]
+        counts = counts[intersect(features, rownames(counts)),, drop = F]
     }
+
     ## meta.data
     sample.id = as.character(object@meta.data[,sample.var])
     cluster.id = as.character(object@meta.data[,cluster.var])
@@ -316,7 +335,7 @@ celllabeler.CellLabeler = function(object,
 #' 
 #' data(exampledata)
 #' meta.data = data.frame(sample = sample.id, cluster = cluster.id, row.names = colnames(counts))
-#' obj = CreateCellLabelerObject(counts = counts, meta.data = meta.data)
+#' obj = CreateCellLabelerObject(counts = counts, data = data, meta.data = meta.data)
 #' obj = celllabeler(obj, sample.var = "sample", cluster.var = "cluster", markers = markers)
 #' 
 #' @rdname celllabeler
@@ -333,7 +352,7 @@ celllabeler = function(object, ...) {
 
 #' Add markers to celllabeler ude results and perform prediction
 #' @param res A celllabeler output list involoving at least ModelFits
-#' @param counts A gene expression raw count matrix
+#' @param counts A normalized gene expression matrix
 #' @param markers Marker list with name being cell type names
 #' @param cluster.id Character vectors of cluster information for each cell. 
 #' 
@@ -379,6 +398,7 @@ AddMarkers = function(res, counts, markers, cluster.id){
 
     res$prediction = pred$predict
     res$ModelScores = pred$scores
+    res$ModelMarkers = pred$markers
     return(res)
 }
 ##############################################################################################

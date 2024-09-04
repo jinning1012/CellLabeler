@@ -12,10 +12,13 @@
 #'
 #' @slot counts The raw expression count matrix
 #' @slot data Normalized gene matrix
-#' @slot meta.data Cell-level metadata
-#' @slot ModelFits CellLabeler model fitting results
-#' @slot ude CellLabeler detected uniquely differential expression genes
-#' @slot prediction CellLabeler prediction dataframe
+#' @slot scale.data Scaled gene matrix
+#' @slot meta.data A cell-level metadata dataframe
+#' @slot ude A list of CellLabeler detected uniquely differential expression genes
+#' @slot ModelFits A list of model fitting results in ude detection
+#' @slot ModelScores A list of aggragated gene scores for each potential cell type
+#' @slot ModelMarkers A dataframe of CellLabeler identified marker genes overlapped between clusters and potential cell type
+#' @slot prediction A CellLabeler prediction dataframe
 #' @slot num.core The number of core used in the package
 #' 
 setClass("CellLabeler", slots=list(
@@ -27,23 +30,22 @@ setClass("CellLabeler", slots=list(
   prediction = "ANY",
   ModelFits = "ANY",
   ModelScores = "ANY",
-  num.core = "numeric",
-  res.path = "ANY"
+  ModelMarkers = "ANY",
+  num.core = "numeric"
 ))
 
 
 ####################################################
 #' Create the CellLabeler object with filtering step
-#' @param counts Gene expression count matrix (data.frame), p x n -- p is the number of genes and n is the number of cells
+#' @param counts Gene expression count matrix (matrix), p x n -- p is the number of genes and n is the number of cells
+#' @param data Normalized gene expression matrix (p x n)
 #' @param meta.data Meta data dataframe to store batch and clustering information
-#' @param project Character name specifying project name, default is "CellLabeler"
 #' @param ude.result A list of results using celllabeler() on counts data
 #' @param pct.cells A numeric value indicating at least what proportion of cells the genes expressed on
 #' @param min.cells A numeric value indicating at least what number of cells the genes expressed on
 #' @param min.features A numeric value indicating at least what number of genes the cells expressed
 #' @param min.umi A numeric value indicating at least what total counts of genes the cells expressed
 #' @param num.core Number of cores in parallel running
-#' @param res.path Path to save the results
 #' @return A CellLabeler object with filtered gene expression matrix
 #' 
 #' @importFrom Matrix rowSums colSums
@@ -57,7 +59,12 @@ setClass("CellLabeler", slots=list(
 #' 
 #' @export
 #' 
-CreateCellLabelerObject = function(counts, meta.data, ude.result = NULL, project = "CellLabeler", pct.cells = 0.005, min.cells = 0, min.features = 0, min.umi = 10, num.core = 1, res.path = NULL){
+CreateCellLabelerObject = function(counts = NULL, data = NULL, meta.data, ude.result = NULL, pct.cells = 0.005, min.cells = 0, min.features = 0, min.umi = 10, num.core = 1){
+    if(is.null(counts) & is.null(data)){
+        stop("Input at least one of the counts or normalized data.")
+    }
+
+    if(!is.null(counts)){
     ## check data order should consistent
 	if(!identical(colnames(counts), rownames(meta.data))){
 		stop("The column names of counts and row names of meta.data should be should be matched each other! (counts -- g x n; meta.data -- n x c)")
@@ -72,41 +79,47 @@ CreateCellLabelerObject = function(counts, meta.data, ude.result = NULL, project
     ## filter genes on the number of cells expressing
     if (min.cells > 0) {
         num.cells = owSums(x = counts > 0)
-        counts = counts[which(x = num.cells >= min.cells), ]
+        counts = counts[which(x = num.cells >= min.cells), , drop = F]
     }## end fi
     
     ## Filter based on min.features
     if (min.features > 0) {
         nfeatures = colSums(x = counts > 0)
-        counts = counts[, which(x = nfeatures >= min.features)]
+        counts = counts[, which(x = nfeatures >= min.features), drop = F]
         meta.data = meta.data[which(x = nfeatures >= min.features),]
     }## end fi
     
     if (min.umi > 0) {
         total.umi = colSums(x = counts)
-        counts = counts[, which(x = total.umi > min.umi)]
+        counts = counts[, which(x = total.umi > min.umi), drop = F]
         meta.data = meta.data[which(x = total.umi > min.umi),]
     }## end fi
-	
+
+        if(!is.null(data)){
+            data = data[rownames(counts),,drop = F]
+        }
+    }else{
+        print("Only normalized data is inputed.")
+    }
     ## inheriting
 	object = new(
 		Class = "CellLabeler",
 		counts = counts,
         meta.data = meta.data,
-        data = NULL,
+        data = data,
         scale.data = NULL,
         ude = NULL,
         prediction = NULL,
         ModelFits = NULL,
         ModelScores = NULL,
-        num.core = num.core,
-        res.path = res.path
+        ModelMarkers = NULL,
+        num.core = num.core
 	)
 
     ## add ude.results in it
     if(!is.null(ude.result)){
         names_input = names(ude.result)
-        if(!all(c("ude","prediction","ModelFits","ModelScores") %in% names_input)){
+        if(!all(c("ude","prediction","ModelFits","ModelScores","ModelMarkers") %in% names_input)){
             stop("## Input UDE results are not correct.")
         }
 
@@ -114,6 +127,7 @@ CreateCellLabelerObject = function(counts, meta.data, ude.result = NULL, project
         object@prediction = ude.result$prediction
         object@ModelFits = ude.result$ModelFits
         object@ModelScores = ude.result$ModelScores
+        object@ModelMarkers = ude.result$ModelMarkers
     }
 
 	return(object)
@@ -133,8 +147,8 @@ setMethod(f = "show",
   signature = "CellLabeler",
   definition = function(object) {
     cat("## An object of class CellLabeler","\n")
-    cat("## Gene number:", nrow(object@counts),"\n")
-    cat("## Cell number:", ncol(object@counts),"\n")
+    cat("## Gene number:", ifelse(is.null(object@counts), nrow(object@data), nrow(object@counts)),"\n")
+    cat("## Cell number:", ifelse(is.null(object@counts), ncol(object@data), ncol(object@counts)),"\n")
     cat("## Meta columns:",paste(colnames(object@meta.data), collapse = ", "), "\n")
     cat('\n')
   })

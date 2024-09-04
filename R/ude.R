@@ -126,7 +126,9 @@ RegressOutMatrix = function(data.expr,
     # latent.data matrix each time by reusing it after calculating it once
     regression.mat = cbind(latent.data, data.expr[1,])
     colnames(regression.mat) = c(colnames(x = latent.data), "GENE")
-    qr = lm(fmla, data = regression.mat, qr = TRUE)$qr
+    #qr = lm(fmla, data = regression.mat, qr = TRUE)$qr
+    modelfit = lm(fmla, data = regression.mat, qr = T)
+    qr = modelfit$qr
     rm(regression.mat)
   }## end fi
   
@@ -194,7 +196,7 @@ FindAllUniqueMarkers = function(data.use,
   runOneCompare = function(ident.1, ident.2){
     cells.1 = which(cluster.id == ident.1)
     cells.2 = which(cluster.id == ident.2)
-    sub_data.use = data.use[,c(cells.1, cells.2)]
+    sub_data.use = data.use[,c(cells.1, cells.2), drop = F]
     sub_group = cluster.id[c(cells.1, cells.2)]
     sub_sample = sample.id[c(cells.1, cells.2)]
     outcome = as.numeric(sub_group == ident.1)
@@ -205,7 +207,7 @@ FindAllUniqueMarkers = function(data.use,
     # modified by ningjin; 2023-9-14 20:06
     if(length(unique(sub_sample))==1){
       resi = sub_data.use
-      resi = resi[Matrix::rowSums(resi)!=0, ] ## remove some genes
+      resi = resi[Matrix::rowSums(resi)!=0, , drop = F] ## remove some genes
     }else{
       latent.data = data.frame(sample = sub_sample)
       rownames(latent.data) = colnames(sub_data.use)
@@ -214,39 +216,33 @@ FindAllUniqueMarkers = function(data.use,
                                 model.use = 'linear',
                                 features.regress = NULL,
                                 verbose = F)
-      resi = resi[Matrix::rowSums(resi)!=0, ]
+      resi = resi[Matrix::rowSums(resi)!=0, ,drop = F]
     }## end batch regression
+
     ## ********************************** ##
     ##           firth's model            ##
     ## ********************************** ##
-      ## modified by ningjin; we change the loop to foreach
-    ## runSomeGenes() enables to run several genes parallelly while catch errors
-    runSomeGenes = function(index) {
-      res_firth_tmp = foreach(k = index,.errorhandling='pass') %dopar% {
-        res_tmp = tryCatch({
-          filr = logistf(outcome ~ resi[k,])
-          res_tmp = c(beta=filr$coefficients[2], pvalue=filr$prob[2])
-        },
-        warning = function(war) {return(paste0('logistf warining: escape the gene ',rownames(resi)[k]))},
-        error = function(err) {return(paste0('logistf error: escape the gene ',rownames(resi)[k]))},
-        finally = {
-          # return('other things')
-        }) # END tryCatch
-        return(res_tmp)
-      }# END foreach
+    ## modified by ningjin; we change the loop to foreach to catch error if happened
 
-      output_idx = which(unlist(lapply(res_firth_tmp, length)) == 2)
-      res_firth_tmp = res_firth_tmp[output_idx]
-      res_firth_tmp = do.call(rbind,res_firth_tmp)
-      rownames(res_firth_tmp) = rownames(resi)[index[output_idx]]
-      colnames(res_firth_tmp) = c('beta','pvalue')
-      return(res_firth_tmp)
+    res_firth = foreach(k = 1:nrow(resi),.errorhandling='pass') %dopar% {
+      res_tmp = tryCatch({
+        filr = logistf(outcome ~ resi[k,])
+        res_tmp = c(beta=filr$coefficients[2], pvalue=filr$prob[2])
+      },
+      warning = function(war) {return(paste0('logistf warining: escape the gene ',rownames(resi)[k]))},
+      error = function(err) {return(paste0('logistf error: escape the gene ',rownames(resi)[k]))},
+      finally = {
+        # return('other things')
+      })
+      return(res_tmp)
     }
-    
-    len = nrow(resi)
-    res_firth = Reduce(rbind, 
-                        lapply(suppressWarnings(split(seq(len), seq(len / 100))), 
-                               function(index) runSomeGenes(index)))
+
+    ## collect results 
+    output_idx = which(unlist(lapply(res_firth, length)) == 2)
+    res_firth = res_firth[output_idx] %>% do.call(rbind,.)
+    rownames(res_firth) = rownames(resi)[output_idx]
+    colnames(res_firth) = c('beta','pvalue')
+
     return(res_firth)
   }## end function
   
@@ -280,11 +276,13 @@ FindAllUniqueMarkers = function(data.use,
     if(!(res_name %in% names(all_res_list))){
       res_tmp = all_res_list[[paste0(ident.perm[2,i],'_versus_',ident.perm[1,i])]]
       ## inverse the effect
-      res_tmp[,1] = -res_tmp[,1]
+      ## the first column is beta from firth model
+      res_tmp[,1] = -as.vector(res_tmp[,1])
       all_res_list[[res_name]] = res_tmp
       rm(res_name)
     }
   }
+
   ## collect all firth model results
   output = list() # final output 
   for(ident.one in clusters){
@@ -311,8 +309,10 @@ FindAllUniqueMarkers = function(data.use,
     de_res[,'p.adjust'] = p.adjust(combined.pv, method = 'BH')
     
     ## check if upregulated ##
-    beta_mat = de_res[,grep('beta.',colnames(de_res))]
-    pv_mat = de_res[,grep('pv.',colnames(de_res))]
+    #beta_mat = de_res[,grep('beta.',colnames(de_res)),drop = F]
+    #pv_mat = de_res[,grep('pv.',colnames(de_res)),drop = F]
+    beta_mat = de_res[,paste0("beta.",res_name)]
+    pv_mat = de_res[,paste0("pv.",res_name)]
     ## modified by ningjin 2023-9-4
     ## we want it upregulated to some extent across groups
     changes = ifelse(apply(beta_mat, 1, function(x) length(which(x>0))/length(x)) >= upPercent , 'upregulated','not upregulated')
@@ -320,11 +320,7 @@ FindAllUniqueMarkers = function(data.use,
     output[[ident.one]] = de_res
   }
   
-  ## computation time
-  # time2 = Sys.time()
-  # message(paste0('## Computation time (mins):',round(difftime(time2,time1, units = 'mins'), digits = 3),'.'))
-  
-  ## finally
+  ## finally output as list of model fits results
   return(output)
 }
 
@@ -439,7 +435,7 @@ ComputePrediction = function(de_model, marker_list, PCT_mat){
   score_list = list()
   de_list = list()
   predict_df = data.frame()
-  
+  modelmarker_df = data.frame()
   for (i.celltype in alltypes) {
     Cbar = ComputeGeneScore(de_model,i.celltype,PCT_mat)
     Cbar = Cbar[Cbar > 0] # while some statistic will be negative; ningjin 2023-9-5
@@ -457,6 +453,8 @@ ComputePrediction = function(de_model, marker_list, PCT_mat){
     }) %>% unlist 
     # order the score
     score = sort(score, decreasing = T)
+
+
     if(!all(score == 0) ){
       score = (score - min(score))/(max(score) - min(score))
     }
@@ -467,16 +465,29 @@ ComputePrediction = function(de_model, marker_list, PCT_mat){
     }else{
       de_list[[i.celltype]] = de
     }
-
+    ## we record the overlapped marker
+    if(!all(score == 0)){
+      for(im in names(score)[score>0]){
+        df = data.frame(
+          cluster = i.celltype, 
+          celltype = im, 
+          ude = paste(intersect(de,marker_list[[im]]), collapse = ","),
+          score = score[im])
+        rownames(df) = NULL
+        modelmarker_df = rbind(modelmarker_df, df)
+      }
+    }
+    
     predict_df = rbind.data.frame(predict_df,
                                    data.frame(cluster = i.celltype,
                                               prediction = ifelse(all(score == 0),' * Loss of match *',names(score)[1]),
                                               score = score[1]))
     rownames(predict_df) = NULL
   }
-  return(list(predict = predict_df,
+  return(list(degs = de_list,
+              predict = predict_df,
               scores = score_list,
-              degs = de_list))
+              markers = modelmarker_df))
 }
 
 
@@ -542,7 +553,7 @@ prediction_plot = function(object){
 #' Collect all genes in the analysis,
 #' 
 #' @param de_model Results of FindAllUniqueMarkers().
-#'
+#' @export
 #' 
 allGenes = function(de_model){
   out = lapply(de_model, rownames) %>% unlist %>% unique()

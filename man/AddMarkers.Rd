@@ -9,7 +9,7 @@ AddMarkers(res, counts, markers, cluster.id)
 \arguments{
 \item{res}{A celllabeler output list involoving at least ModelFits}
 
-\item{counts}{A gene expression raw count matrix}
+\item{counts}{A normalized gene expression matrix}
 
 \item{markers}{Marker list with name being cell type names}
 

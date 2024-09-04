@@ -46,7 +46,7 @@
 
 \item{max.cellsp}{Maximum downsamplng ratio (from 0 to 1); if NULL than all cells will be used in computation}
 
-\item{up.thr}{Numberic value in \link{0,1} as the proportion of the remaining clusters in which a gene is upregulated in the interested group compared with it. Highter, the more strict. Default 0.9.}
+\item{up.thr}{Numberic value in \link{0,1} as the proportion of the remaining clusters in which a gene is upregulated in the interested group compared with it. Higher, the more strict. Default 0.9.}
 
 \item{mod}{Character as "combine" or "all", specifying if combining similar clusters or not before DE test. Default is "combine"}
 
