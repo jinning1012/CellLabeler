@@ -164,7 +164,7 @@ RegressOutMatrix = function(data.expr,
 }## end func
 
 
-#'
+
 #' Fitting the firth logistic regression model to perform unique marker gene analysis for clustered scRNA-seq data
 #' 
 #' @param data.use Log-normalized gene expression matrix; rows are genes and columns as cells
@@ -309,13 +309,15 @@ FindAllUniqueMarkers = function(data.use,
     de_res[,'p.adjust'] = p.adjust(combined.pv, method = 'BH')
     
     ## check if upregulated ##
-    #beta_mat = de_res[,grep('beta.',colnames(de_res)),drop = F]
-    #pv_mat = de_res[,grep('pv.',colnames(de_res)),drop = F]
-    beta_mat = de_res[,paste0("beta.",res_name)]
-    pv_mat = de_res[,paste0("pv.",res_name)]
+    #beta_mat = de_res[,grep('beta.',colnames(de_res))]
+    #pv_mat = de_res[,grep('pv.',colnames(de_res))]
+    beta_mat = de_res[,paste0("beta.",res_name), drop = F]
+    pv_mat = de_res[,paste0("pv.",res_name), drop = F]
     ## modified by ningjin 2023-9-4
     ## we want it upregulated to some extent across groups
     changes = ifelse(apply(beta_mat, 1, function(x) length(which(x>0))/length(x)) >= upPercent , 'upregulated','not upregulated')
+    ## ningjin 2024-09-25 10:42
+    changes[de_res[,"p.adjust"] >0.05] = "not upregulated"
     de_res$change = changes
     output[[ident.one]] = de_res
   }
@@ -571,7 +573,7 @@ allGenes = function(de_model){
 #' @param cluster.id A vector of cluster labels for cells; same as input in FindAllUniqueMarkers(); if combined, then this cluster.id is the combined cluster label
 #' 
 #' @return A list of combined statistic for each cluster
-#' 
+#' @importFrom dplyr arrange
 #' @export 
 #' 
 RankAllUniqueMarkers = function(de_model, counts, cluster.id){
@@ -602,3 +604,138 @@ RankAllUniqueMarkers = function(de_model, counts, cluster.id){
   return(output_list)
 }
 
+
+
+
+
+#' Add markers to celllabeler ude results and perform prediction
+#' @param res A celllabeler output list involoving at least ModelFits
+#' @param counts A normalized gene expression matrix
+#' @param markers Marker list with name being cell type names
+#' @param cluster.id Character vectors of cluster information for each cell. 
+#' 
+#' @return A celllabeler output list involoving predictions
+#' 
+#' @author Jin ning
+#' 
+#' @export 
+AddMarkers = function(res, counts, markers, cluster.id){
+    ## check the input res must involve ModelFits
+    if(is.null(res$ModelFits)){
+        stop("Please run celllabeler() first to identify marker genes.")
+    }
+
+    if(!is.null(res$prediction)){
+        cat("There is already prediction results and we then update and  the original results.\n")
+    }
+    
+    modelfits = res$ModelFits
+
+    ## combine cluster.id according to ude results
+    modelfits_cluster = names(modelfits)
+    input_cluster_type = unique(as.character(cluster.id))
+    if(!setequal(modelfits_cluster,input_cluster_type)){
+        ## we need to do combination
+        modelfits_cluster = modelfits_cluster[grep(" & ",modelfits_cluster)]
+        for(icomb in modelfits_cluster){
+            index_icomb = which(cluster.id %in% strsplit(icomb," & ")[[1]])
+            cluster.id[index_icomb] = icomb
+        }
+    }
+
+    ## here, the input counts are filtered in the steps of CreateCellLabelerObject()
+    ## while the input modelfits are run on all raw genes
+    ## we filtered out the redundant genes in modelfits
+
+    input_genes = intersect(allGenes(modelfits), rownames(counts))
+    modelfits = lapply(modelfits, function(x) x[intersect(input_genes,rownames(x)),])
+    
+    cat("## Compute expression percent of genes ...\n")
+    pct = ComputePCT(counts,cluster.id,input_genes)
+    pred = ComputePrediction(modelfits,markers,pct)
+
+    res$prediction = pred$predict
+    res$ModelScores = pred$scores
+    res$ModelMarkers = pred$markers
+    return(res)
+}
+
+
+
+
+#' Split the prediction dataframe when there is combination before annotation 
+#' @param prediction The dataframe of cell type annotation
+#' 
+#' @return The dataframe of cell type annotation
+#' 
+#' @export 
+
+ExpandPrediction = function(prediction){
+    comb_idx = which(grepl(" & ",prediction[,1]))
+    if(length(comb_idx)>0){
+        df1 = prediction[-comb_idx,,drop = F]
+        for(idx in comb_idx){
+        df = data.frame(
+            cluster = strsplit(prediction[idx,1]," & ")[[1]],
+            prediction = prediction[idx,2],
+            score = prediction[idx,3])
+        df1 = rbind.data.frame(df1,df)
+        }
+        prediction = df1
+    }
+    rownames(prediction)=NULL
+    return(prediction)
+}
+
+
+
+
+#' Update up-regulated DE genes given a new up.thr percent
+#' 
+#' @param res A list of results from celllabeler
+#' @param up.thr Numeric value in [0,1] specifying the up-regulation threshold
+#' @param counts Raw count expression matrix
+#' @param cluster.id Vector of charaters specifying clustering label
+#' @param markers Marker gene list; if NULL, the orginal prediction will be set empty to avoid misleading
+#' @return A list of results in the format of celllabeler output
+#' 
+#' @export 
+AdjustUpregulation = function(res, up.thr, counts, cluster.id, markers = NULL){
+    if(is.null(res$ModelFits)){
+      stop("The input 'res' should contain 'ModelFits'. \n")
+    }
+
+    if(up.thr>1 | up.thr <=0){
+      stop("The input 'up.thr' should be in [0,1].")
+    }
+
+    modelfits = res$ModelFits
+    clusters = names(modelfits)
+
+    new_modelfits = list()
+    for(id in clusters){
+      de_res = modelfits[[id]]
+      res_name = setdiff(clusters, id)
+      beta_mat = de_res[,paste0("beta.",res_name), drop = F]
+      pv_mat = de_res[,paste0("pv.",res_name), drop = F]
+      ## modified by ningjin 2023-9-4
+      ## we want it upregulated to some extent across groups
+      changes = ifelse(apply(beta_mat, 1, function(x) length(which(x>0))/length(x)) >= up.thr , 'upregulated','not upregulated')
+      changes[de_res[,"p.adjust"] >0.05] = "not upregulated"
+      de_res$change = changes
+      new_modelfits[[id]] = de_res
+    }
+
+    pct = ComputePCT(counts,cluster.id,allGenes(new_modelfits))
+    if(is.null(markers)){
+        ## no prediction but still computing gene score
+        clusters = names(new_modelfits)
+        deg = lapply(clusters,function(i.celltype) ComputeGeneScore(new_modelfits,i.celltype,pct) %>% names)
+        names(deg) = clusters
+        pred = list(degs = deg)
+    }else{
+        pred = ComputePrediction(new_modelfits,markers,pct)
+    }
+    out = list(ude=pred$degs,prediction = pred$predict, ModelScores = pred$scores, ModelFits=new_modelfits, ModelMarkers = pred$markers)
+    return(out)
+}

@@ -53,16 +53,34 @@ celllabeler.default = function(object,
     counts = object
 
     ## check gene names 
-    if(is.null(rownames(object))){
+    if(is.null(rownames(counts))){
         stop("The input gene expression matrix must have gene names.")
     }
     
-    if(is.null(colnames(object))){
+    if(is.null(colnames(counts))){
         stop("The input gene expression matrix must have cell names.")
     }
 
-    data = NormalizeData(counts, verbose = verbose)
+    if(any(is.na(cluster.id))){
+        stop("The input cluster label cannot have NA values.")
+    }
 
+
+    if(any(is.na(sample.id))){
+        stop("The input sample label cannot have NA values.")
+    }
+
+
+    ## judge if the matrix has been normalized
+    if(any(counts %% 1 != 0)){
+        print("The input matrix has already been normalized.")
+        data = counts
+        
+    }else{
+        counts = counts[rowSums(counts)>100,,drop = F]
+        data = NormalizeData(counts, verbose = verbose)
+    }
+    
     ##***********************************************************##
     ##           down sample cells if required (optional)        ##
     ##***********************************************************##
@@ -97,13 +115,13 @@ celllabeler.default = function(object,
     {
         idx1 = which(cluster.id == ident.1)
         idx2 = which(cluster.id != ident.1)
-        avg.ident.1 = log(x = rowMeans(x = counts[,idx1, drop = F]) + 1, base = 2) 
-        avg.ident.2 = log(x = rowMeans(x = counts[,idx2, drop = F]) + 1, base = 2) 
-        #avg.ident.1 = log(x = rowMeans(x = exp(data[,idx1, drop = F])-1) + 1, base = 2) 
-        #avg.ident.2 = log(x = rowMeans(x = exp(data[,idx2, drop = F])-1) + 1, base = 2)
+        #avg.ident.1 = log(x = rowMeans(x = counts[,idx1, drop = F]) + 1, base = 2) 
+        #avg.ident.2 = log(x = rowMeans(x = counts[,idx2, drop = F]) + 1, base = 2) 
+        avg.ident.1 = log(x = rowMeans(x = exp(data[,idx1, drop = F])-1) + 1, base = 2) 
+        avg.ident.2 = log(x = rowMeans(x = exp(data[,idx2, drop = F])-1) + 1, base = 2)
         
         log_foldchange = avg.ident.1 - avg.ident.2
-        names(log_foldchange) = rownames(counts)
+        names(log_foldchange) = rownames(data)
         log_foldchange = log_foldchange[log_foldchange>0]
         output = sort(log_foldchange, decreasing = T)[seq(min(similar.gene, length(log_foldchange)))] %>% names
         return(output)
@@ -117,8 +135,7 @@ celllabeler.default = function(object,
     
     adj_matrix = matrix(0, nrow = length(TopGenes_bylogFC), ncol = length(TopGenes_bylogFC))
     colnames(adj_matrix) = rownames(adj_matrix) = names(TopGenes_bylogFC)
-    for(i in idx)
-    {
+    for(i in idx){
         adj_matrix[comb_mat[1,i], comb_mat[2,i]] = 1
     }
     adj_matrix = adj_matrix+t(adj_matrix)-diag(diag(adj_matrix))
@@ -152,8 +169,7 @@ celllabeler.default = function(object,
     clusters = unique(cluster.id)
 	clusters.size = table(cluster.id)
     clusters.filter = names(clusters.size)[clusters.size < min.ccells]
-    if(length(clusters.filter) > 0)
-    {
+    if(length(clusters.filter) > 0){
         for(mm in clusters.filter){
         message(paste0("## Remove ",mm,": #cells =",clusters.size[mm]))
         }
@@ -177,12 +193,12 @@ celllabeler.default = function(object,
         {
             idx1 = which(cluster.id == ident.1)
             idx2 = which(cluster.id != ident.1)
-            avg.ident.1 = log(x = rowMeans(x = counts[,idx1,drop = F]) + 1, base = 2) 
-            avg.ident.2 = log(x = rowMeans(x = counts[,idx2,drop = F]) + 1, base = 2)
-            # avg.ident.1 = log(x = rowMeans(x = exp(data[,idx1,drop = F])-1) + 1, base = 2) 
-            # avg.ident.2 = log(x = rowMeans(x = exp(data[,idx2,drop = F])-1) + 1, base = 2)
+            #avg.ident.1 = log(x = rowMeans(x = counts[,idx1,drop = F]) + 1, base = 2) 
+            #avg.ident.2 = log(x = rowMeans(x = counts[,idx2,drop = F]) + 1, base = 2)
+            avg.ident.1 = log(x = rowMeans(x = exp(data[,idx1,drop = F])-1) + 1, base = 2) 
+            avg.ident.2 = log(x = rowMeans(x = exp(data[,idx2,drop = F])-1) + 1, base = 2)
             log_foldchange = avg.ident.1 - avg.ident.2
-            names(log_foldchange) = rownames(counts)
+            names(log_foldchange) = rownames(data)
             log_foldchange = log_foldchange[log_foldchange>lfc]
             if(length(log_foldchange)>0){
                 output = sort(log_foldchange, decreasing = T)[seq(min(max.genes, length(log_foldchange)))] %>% names
@@ -349,58 +365,6 @@ celllabeler = function(object, ...) {
 
 
 
-
-#' Add markers to celllabeler ude results and perform prediction
-#' @param res A celllabeler output list involoving at least ModelFits
-#' @param counts A normalized gene expression matrix
-#' @param markers Marker list with name being cell type names
-#' @param cluster.id Character vectors of cluster information for each cell. 
-#' 
-#' @return A celllabeler output list involoving predictions
-#' 
-#' @author Jin ning
-#' 
-#' @export 
-AddMarkers = function(res, counts, markers, cluster.id){
-    ## check the input res must involve ModelFits
-    if(is.null(res$ModelFits)){
-        stop("Please run celllabeler() first to identify marker genes.")
-    }
-
-    if(!is.null(res$prediction)){
-        cat("There is already prediction results and we then update and  the original results.\n")
-    }
-    
-    modelfits = res$ModelFits
-
-    ## combine cluster.id according to ude results
-    modelfits_cluster = names(modelfits)
-    input_cluster_type = unique(as.character(cluster.id))
-    if(!setequal(modelfits_cluster,input_cluster_type)){
-        ## we need to do combination
-        modelfits_cluster = modelfits_cluster[grep(" & ",modelfits_cluster)]
-        for(icomb in modelfits_cluster){
-            index_icomb = which(cluster.id %in% strsplit(icomb," & ")[[1]])
-            cluster.id[index_icomb] = icomb
-        }
-    }
-
-    ## here, the input counts are filtered in the steps of CreateCellLabelerObject()
-    ## while the input modelfits are run on all raw genes
-    ## we filtered out the redundant genes in modelfits
-
-    input_genes = intersect(allGenes(modelfits), rownames(counts))
-    modelfits = lapply(modelfits, function(x) x[intersect(input_genes,rownames(x)),])
-    
-    cat("## Compute expression percent of genes ...\n")
-    pct = ComputePCT(counts,cluster.id,input_genes)
-    pred = ComputePrediction(modelfits,markers,pct)
-
-    res$prediction = pred$predict
-    res$ModelScores = pred$scores
-    res$ModelMarkers = pred$markers
-    return(res)
-}
 ##############################################################################################
 
 
