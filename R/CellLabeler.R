@@ -77,7 +77,7 @@ celllabeler.default = function(object,
         data = counts
         
     }else{
-        counts = counts[rowSums(counts)>100,,drop = F]
+        #counts = counts[rowSums(counts)>100,,drop = F]
         data = NormalizeData(counts, verbose = verbose)
     }
     
@@ -221,7 +221,7 @@ celllabeler.default = function(object,
 	##########################################################
 	cat(paste("## ===== CellLabeler INPUT INFORMATION ====## \n"))
 	cat(paste("## number of total cells: ", ncol(data),"\n"))
-	cat(paste("## number of total features: ", length(gene.use),"\n"))
+	cat(paste("## number of total features: ", nrow(data),"\n"))
     cat(paste("## number of cell clusters: ", length(unique(cluster.id)),"\n"))
 	cat(paste("## number of cores: ", num.core,"\n"))
 	cat(paste("## ========== END INFORMATION ============## \n"))
