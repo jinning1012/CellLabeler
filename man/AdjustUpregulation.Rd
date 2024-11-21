@@ -9,7 +9,7 @@ AdjustUpregulation(res, up.thr, counts, cluster.id, markers = NULL)
 \arguments{
 \item{res}{A list of results from celllabeler}
 
-\item{up.thr}{Numeric value in \link{0,1} specifying the up-regulation threshold}
+\item{up.thr}{Numeric value in [0,1] specifying the up-regulation threshold}
 
 \item{counts}{Raw count expression matrix}
 

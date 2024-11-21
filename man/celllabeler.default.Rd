@@ -32,7 +32,7 @@
 
 \item{similar.gene}{Integer value as the number of top expressed genes in considering combining clusters before DE test}
 
-\item{similar.pct}{Numeric value in \link{0,1} as the threshold to combine clusters before DE test when either two cluster have enough overlapped highly expressed genes. Default is 0.8.}
+\item{similar.pct}{Numeric value in [0,1] as the threshold to combine clusters before DE test when either two cluster have enough overlapped highly expressed genes. Default is 0.8.}
 
 \item{lfc}{Limit testing to genes which show the maximum on average X-fold difference (log-scale) between the interested clusters and the rest others. Default is 0.5.}
 
@@ -44,7 +44,7 @@
 
 \item{mod}{Character as "combine" or "all", specifying if combining similar clusters or not before DE test. Default is "combine"}
 
-\item{up.thr}{Numberic value in \link{0,1} as the proportion of the remaining clusters in which a gene is upregulated in the interested group compared with it. Highter, the more strict. Default 0.9.}
+\item{up.thr}{Numberic value in [0,1] as the proportion of the remaining clusters in which a gene is upregulated in the interested group compared with it. Highter, the more strict. Default 0.9.}
 
 \item{num.core}{Number of cores in multi-threaded running. Default is 1.}
 
