@@ -36,8 +36,7 @@ res = AddMarkers(res = res, counts = counts, markers = markers, cluster.id = clu
 
 We also involve a clustering strategy. We adopt the approach following “The molecular cytoarchitecture of the adult mouse brain”. We cluster the cells for multiple rounds and achieve different levels of precision.
 ```{r}
-cluster_df = multiple_clustering(counts, loop.max = 10, k = 50,
-  min.cells = 100, num.hvg = 10,num.de = 10,logfc = 0.1, min.umi = 100, verbose = T)
+cluster_df = MultipleClustering(counts)
 ```
 
 
