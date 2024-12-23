@@ -30,10 +30,9 @@ Alternatively, CellLabeler also supports raw counts matrix straighforward.
 ```{r}
 ## with markers, to do cell type annotation
 res = celllabeler(counts, sample.id = sample.id, cluster.id = cluster.id, markers=markers)
-
 ## without markers, to do marker gene detection
 res = celllabeler(counts, sample.id = sample.id ,cluster.id = cluster.id)
-```{r}
+```
 The output is a CellLabeler object involoving ude (uniquely differential expressed genes), prediction (a dataframe of cluster and predicted cell type infomation), ModelFits (full statistic results of pairwise Firth LR test) and ModelScores (evaluation score of each potential cell type).
 
 Usually we save these results by "res = list(ude = object@ude, prediction = object@prediction, ModelScores = object@ModelScores, ModelFits = object@ModelFits)". Then we offer a function to update the prediction by giving a new marker list.
