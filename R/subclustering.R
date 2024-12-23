@@ -9,7 +9,7 @@
 #'
 #' @rdname ClustLouvain
 #' @concept clustering
-#'
+#' @import dplyr
 #'
 #' @export
 #
@@ -363,19 +363,19 @@ GroupSingletons <- function(ids, SNN, group.singletons = TRUE, verbose = TRUE) {
   return(ids)
 }## end func
 
-# Run annoy
-#
-# @param data Data to build the index with
-# @param query A set of data to be queried against data
-# @param metric Distance metric; can be one of "euclidean", "cosine", "manhattan",
-# "hamming"
-# @param n.trees More trees gives higher precision when querying
-# @param k Number of neighbors
-# @param search.k During the query it will inspect up to search_k nodes which
-# gives you a run-time tradeoff between better accuracy and speed.
-# @param include.distance Include the corresponding distances
-# @param index optional index object, will be recomputed if not provided
-#
+#' Run annoy
+#' @param data Data to build the index with
+#' @param query A set of data to be queried against data
+#' @param metric Distance metric; can be one of "euclidean", "cosine", "manhattan","hamming"
+#' @param n.trees More trees gives higher precision when querying
+#' @param k Number of neighbors
+#' @param search.k During the query it will inspect up to search_k nodes which gives you a run-time tradeoff between better accuracy and speed.
+#' @param include.distance Include the corresponding distances
+#' @param index optional index object, will be recomputed if not provided
+#' 
+#' @import dplyr
+#' 
+#' 
 AnnoyNN <- function(data,
                     query = data,
                     metric = "euclidean",
@@ -425,18 +425,14 @@ AnnoyBuildIndex <- function(data, metric = "euclidean", n.trees = 50) {
   return(a)
 }## end func
 
-# Search an Annoy approximate nearest neighbor index
-#
-# @param Annoy index, built with AnnoyBuildIndex
-# @param query A set of data to be queried against the index
-# @param k Number of neighbors
-# @param search.k During the query it will inspect up to search_k nodes which
-# gives you a run-time tradeoff between better accuracy and speed.
-# @param include.distance Include the corresponding distances in the result
-#
-# @return A list with 'nn.idx' (for each element in 'query', the index of the
-# nearest k elements in the index) and 'nn.dists' (the distances of the nearest
-# k elements)
+#' Search an Annoy approximate nearest neighbor index
+#' @param Annoy index, built with AnnoyBuildIndex
+#' @param query A set of data to be queried against the index
+#' @param k Number of neighbors
+#' @param search.k During the query it will inspect up to search_k nodes which gives you a run-time tradeoff between better accuracy and speed.
+#' @param include.distance Include the corresponding distances in the result
+#' 
+#' @return A list with 'nn.idx' (for each element in 'query', the index of the nearest k elements in the index) and 'nn.dists' (the distances of the nearestk elements)
 #
 #' @importFrom future plan
 #' @importFrom future.apply future_lapply
@@ -472,8 +468,6 @@ AnnoySearch <- function(index, query, k, search.k = -1, include.distance = TRUE)
 
 #' As web graph functions
 #' @export 
-#' @examples
-#' as.WebGraph(object)
 #' 
 #'
 as.WebGraph <- function(x, ...) {
@@ -504,6 +498,10 @@ as.WebGraph.Neighbor <- function(x, weighted = TRUE, ...) {
 
 
 
+#' As webGraph matrix
+#' @export 
+#' 
+#' 
 as.WebGraph.Matrix <- function(x, ...) {
   # CheckDots(...)
   x <- as.sparse(x = x)
@@ -516,16 +514,4 @@ as.WebGraph.Matrix <- function(x, ...) {
   return(as(object = x, Class = "WebGraph"))
 }## end func
 
-#' @rdname as.WebGraph
-#' @export
-#' @method as.WebGraph matrix
-#'
-#' @examples
-#' # converting dense matrix
-#' mat <- matrix(data = 1:16, nrow = 4)
-#' rownames(x = mat) <- paste0("feature_", 1:4)
-#' colnames(x = mat) <- paste0("cell_", 1:4)
-#' g <- as.WebGraph(x = mat)
-#'
-as.WebGraph.matrix <- as.WebGraph.Matrix
 

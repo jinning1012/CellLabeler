@@ -2,24 +2,10 @@
 % Please edit documentation in R/subclustering.R
 \name{as.WebGraph}
 \alias{as.WebGraph}
-\alias{as.WebGraph.matrix}
 \title{As web graph functions}
 \usage{
 as.WebGraph(x, ...)
-
-\method{as.WebGraph}{matrix}(x, ...)
 }
 \description{
 As web graph functions
-}
-\examples{
-as.WebGraph(object)
-
-
-# converting dense matrix
-mat <- matrix(data = 1:16, nrow = 4)
-rownames(x = mat) <- paste0("feature_", 1:4)
-colnames(x = mat) <- paste0("cell_", 1:4)
-g <- as.WebGraph(x = mat)
-
 }

@@ -482,7 +482,7 @@ ComputePrediction = function(de_model, marker_list, PCT_mat){
     
     predict_df = rbind.data.frame(predict_df,
                                    data.frame(cluster = i.celltype,
-                                              prediction = ifelse(all(score == 0),' * Loss of match *',names(score)[1]),
+                                              prediction = ifelse(all(score == 0),'* Loss of match *',names(score)[1]),
                                               score = score[1]))
     rownames(predict_df) = NULL
   }
@@ -496,59 +496,50 @@ ComputePrediction = function(de_model, marker_list, PCT_mat){
 #'
 #' Plot gene score for clusters regarding each possible cell types.
 #' 
-#' @param object A cellLabeler object with already run celllabeler()
-#' 
+#' @param res A cellLabeler results with prediction 
 #' @return A ggplot displaying prediction scores 
-#' 
 #' @import ggplot2
-#' @importFrom dplyr group_by
-#' 
 #' @export
 #' 
-prediction_plot = function(object){
-  
-  score_list = object@ModelScores
+PlotModelScore = function(res){
+
+  score_list = res$ModelScores
   if(is.null(score_list)){
-    stop("## The input object has not been with prediction information.")
+    stop("## The input results has not been with prediction information.")
   }
 
-  df = data.frame()
+  base_df = data.frame()
   selected_types = c()
   for (i in seq(length(score_list))) {
-    df = rbind.data.frame(df, data.frame(cluster = names(score_list)[i],
-                                          predict = names(score_list[[i]]),
-                                          value = score_list[[i]]))
+    tmp = data.frame(cluster = names(score_list)[i], prediction = names(score_list[[i]]), score = score_list[[i]])
+    base_df = rbind.data.frame(base_df, tmp)
     # we only show important
-    selected_types = c(selected_types,
-                        names(score_list[[i]])[score_list[[i]] > mean(score_list[[i]])])
+    selected_types = c(selected_types, names(score_list[[i]])[score_list[[i]] > mean(score_list[[i]])])
   }
+  base_df = base_df[base_df$prediction %in% unique(selected_types),]
+  rownames(base_df) = NULL
+
+  ## selected score = 1 celltypes
+  top1_df = subset(base_df, score==1)
+  ## selected score >= 0.9 celltypes
+  top2_df = subset(base_df, score>=0.9 & score<1)
   
-  df = df[df$predict %in% unique(selected_types),]
-  
-  #rownames(df) = NULL
-  df2 = df %>% 
-    group_by(cluster) %>% 
-    summarise(predict = predict[which.max(value)],Value = max(value), Order = 'First') %>% 
-    as.data.frame()
-  
-  ## check score = 0 clusters
-  idx = which(df2$Value == 0)
-  if(length(idx) > 0){
-    df2$predict[idx] = '* Loss of match *'
-  }
-  p = ggplot(df, aes(y = predict, x = cluster,colour = value, size = value))+
-    xlab('Cluster labeler')+ylab('CellLabeler prediction')+
-    labs(colour = 'Gene Score')+
+  p = ggplot(base_df, aes(y = prediction, x = cluster,colour = score, size = score))+
+    geom_point(data = top1_df, aes(x = cluster, y = prediction),size=8, shape = 21, colour = 'red',fill=NA)+
+    #geom_point(data = top2_df, aes(x = cluster, y = prediction),size=8, shape = 21, colour = 'black',fill=NA)+
+    scale_size(range = c(1,5),guide = 'none')+
+    xlab('Cluster')+ylab('CellLabeler prediction')+
+    labs(x = "Cluster", y = "CellLabeler prediction", colour = 'Enrichment score',
+      caption = "Dot size also represents the score\nRed circle highlights top 1 score\n Black circle notates score exceed 0.9")+
     geom_point()+
-    scale_color_gradient(low = "#161853", high = "#EC255A")+
-    scale_size(guide = 'none')+
-    geom_point(data = df2, aes(x = cluster, y = predict),size = 10, shape = 21, colour = 'black')+
+    scale_color_gradient(low = "#70D7DD", high = "#E85C90")+
     theme_bw()+
     theme(axis.text.x = element_text(angle = 30, hjust = 1, vjust = 1),
           axis.text = element_text(size = 10, colour = 'black'),
           axis.title = element_text(size = 15))
   return(p)
 }
+
 
 
 #'

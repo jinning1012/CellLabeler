@@ -36,22 +36,23 @@
 #' @export
 #' 
 celllabeler.default = function(object, 
-                                    sample.id,
-                  					cluster.id,
-                                    markers = NULL,
-                                    similar.gene = 20,
-                  					similar.pct = 0.8,
-                  					lfc = 0.5,
-                  					min.ccells = 10,
-                                    max.cellsp = NULL,
-                                    max.genes = 100,
-									mod = "combine",
-                                    up.thr = 0.9,
-                  					num.core = 1, 
-                  					verbose = TRUE) {
+                                sample.id,
+                                cluster.id,
+                                markers = NULL,
+                                similar.gene = 20,
+                                similar.pct = 0.8,
+                                lfc = 0.5,
+                                min.ccells = 10,
+                                max.cellsp = NULL,
+                                max.genes = 100,
+                                mod = "combine",
+                                up.thr = 0.9,
+                                num.core = 1, 
+                                verbose = TRUE) {
     ## load in counts ##
     counts = object
-
+    counts = as.matrix(counts) ## in case computation burden
+    
     ## check gene names 
     if(is.null(rownames(counts))){
         stop("The input gene expression matrix must have gene names.")
@@ -70,6 +71,13 @@ celllabeler.default = function(object,
         stop("The input sample label cannot have NA values.")
     }
 
+    if(length(cluster.id) != ncol(counts)){
+        stop("The input gene expression and cluster labels are not in the same size.")
+    }
+
+    if(length(sample.id) != length(cluster.id)){
+        stop("The input sample and cluster labels are not in the same size.")
+    }
 
     ## judge if the matrix has been normalized
     if(any(counts %% 1 != 0)){
@@ -77,10 +85,12 @@ celllabeler.default = function(object,
         data = counts
         
     }else{
-        #counts = counts[rowSums(counts)>100,,drop = F]
         data = NormalizeData(counts, verbose = verbose)
     }
     
+    ## record ##
+    cluster.id.full = cluster.id
+    names(cluster.id.full) = colnames(counts)
     ##***********************************************************##
     ##           down sample cells if required (optional)        ##
     ##***********************************************************##
@@ -248,7 +258,7 @@ celllabeler.default = function(object,
         pred = ComputePrediction(ude,markers,pct)
     }
     
-    out = list(ude=pred$degs,prediction = pred$predict, ModelScores = pred$scores, ModelFits=ude, ModelMarkers = pred$markers)
+    out = list(ude=pred$degs,prediction = pred$predict, ModelScores = pred$scores, ModelFits=ude, ModelMarkers = pred$markers, cluster.id = cluster.id.full)
 	return(out)
 }## end function 
 
@@ -346,13 +356,6 @@ celllabeler.CellLabeler = function(object,
 #' Unique marker gene detection and automatic cell type annotation
 #' @param object An object
 #' @param ... Arguments passed to other methods
-#' 
-#' @examples
-#' 
-#' data(exampledata)
-#' meta.data = data.frame(sample = sample.id, cluster = cluster.id, row.names = colnames(counts))
-#' obj = CreateCellLabelerObject(counts = counts, data = data, meta.data = meta.data)
-#' obj = celllabeler(obj, sample.var = "sample", cluster.var = "cluster", markers = markers)
 #' 
 #' @rdname celllabeler
 #' @export celllabeler
