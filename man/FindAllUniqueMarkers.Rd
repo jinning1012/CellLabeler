@@ -20,7 +20,7 @@ FindAllUniqueMarkers(
 
 \item{cluster.id}{Character vector of cluster information in metadata.}
 
-\item{upPercent}{Numberic value in [0,1] as the proportion of the remaining clusters in which a gene is upregulated in the interested group compared with it. Highter, the more strict. Default 0.9.}
+\item{upPercent}{Numberic value in \link{0,1} as the proportion of the remaining clusters in which a gene is upregulated in the interested group compared with it. Highter, the more strict. Default 0.9.}
 
 \item{verbose}{Bool variable to indicate if print the message.}
 

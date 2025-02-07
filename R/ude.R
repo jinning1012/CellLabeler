@@ -480,10 +480,15 @@ ComputePrediction = function(de_model, marker_list, PCT_mat){
       }
     }
     
+    # predict_df = rbind.data.frame(predict_df,
+    #                                data.frame(cluster = i.celltype,
+    #                                           prediction = ifelse(all(score == 0),'* Loss of match *',names(score)[1]),
+    #                                           score = score[1]))
+    
+    ## ningjin 2025-1-7
     predict_df = rbind.data.frame(predict_df,
                                    data.frame(cluster = i.celltype,
-                                              prediction = ifelse(all(score == 0),'* Loss of match *',names(score)[1]),
-                                              score = score[1]))
+                                              prediction = ifelse(all(score == 0),'* Loss of match *',names(score)[1])))
     rownames(predict_df) = NULL
   }
   return(list(degs = de_list,
@@ -526,7 +531,7 @@ PlotModelScore = function(res){
   
   p = ggplot(base_df, aes(y = prediction, x = cluster,colour = score, size = score))+
     geom_point(data = top1_df, aes(x = cluster, y = prediction),size=8, shape = 21, colour = 'red',fill=NA)+
-    #geom_point(data = top2_df, aes(x = cluster, y = prediction),size=8, shape = 21, colour = 'black',fill=NA)+
+    geom_point(data = top2_df, aes(x = cluster, y = prediction),size=8, shape = 21, colour = 'black',fill=NA)+
     scale_size(range = c(1,5),guide = 'none')+
     xlab('Cluster')+ylab('CellLabeler prediction')+
     labs(x = "Cluster", y = "CellLabeler prediction", colour = 'Enrichment score',
@@ -617,7 +622,7 @@ AddMarkers = function(res, counts, markers, cluster.id){
     }
 
     if(!is.null(res$prediction)){
-        cat("There is already prediction results and we then update and  the original results.\n")
+        cat("There is already prediction results and we then update and the original results.\n")
     }
     
     modelfits = res$ModelFits
@@ -668,8 +673,7 @@ ExpandPrediction = function(prediction){
         for(idx in comb_idx){
         df = data.frame(
             cluster = strsplit(prediction[idx,1]," & ")[[1]],
-            prediction = prediction[idx,2],
-            score = prediction[idx,3])
+            prediction = prediction[idx,2])
         df1 = rbind.data.frame(df1,df)
         }
         prediction = df1
@@ -716,17 +720,8 @@ AdjustUpregulation = function(res, up.thr, counts, cluster.id, markers = NULL){
       de_res$change = changes
       new_modelfits[[id]] = de_res
     }
-
-    pct = ComputePCT(counts,cluster.id,allGenes(new_modelfits))
-    if(is.null(markers)){
-        ## no prediction but still computing gene score
-        clusters = names(new_modelfits)
-        deg = lapply(clusters,function(i.celltype) ComputeGeneScore(new_modelfits,i.celltype,pct) %>% names)
-        names(deg) = clusters
-        pred = list(degs = deg)
-    }else{
-        pred = ComputePrediction(new_modelfits,markers,pct)
-    }
-    out = list(ude=pred$degs,prediction = pred$predict, ModelScores = pred$scores, ModelFits=new_modelfits, ModelMarkers = pred$markers)
-    return(out)
+    
+    res$ModelFits = new_modelfits
+    new_res = AddMarkers(res=res, counts=counts, markers=markers, cluster.id=cluster.id)
+    return(new_res)
 }

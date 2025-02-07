@@ -36,12 +36,12 @@
 #' @export
 #' 
 celllabeler.default = function(object, 
-                                sample.id,
                                 cluster.id,
+                                sample.id = NULL,
                                 markers = NULL,
                                 similar.gene = 20,
                                 similar.pct = 0.8,
-                                lfc = 0.5,
+                                lfc = 0.1,
                                 min.ccells = 10,
                                 max.cellsp = NULL,
                                 max.genes = 100,
@@ -66,6 +66,9 @@ celllabeler.default = function(object,
         stop("The input cluster label cannot have NA values.")
     }
 
+    if(is.null(sample.id)){
+        sample.id = rep("sample",length(cluster.id))
+    }
 
     if(any(is.na(sample.id))){
         stop("The input sample label cannot have NA values.")
@@ -222,6 +225,9 @@ celllabeler.default = function(object,
 
         gene.use = unique(unlist(TopGenes_bylogFC))
         gene.use = gene.use[!is.na(gene.use)]
+        if(length(gene.use)==0){
+            stop("The qualified gene is empty!")
+        }
         counts = counts[gene.use,,drop = F]
         data = data[gene.use,,drop = F]
         rm(TopGenes_bylogFC)
@@ -295,7 +301,7 @@ celllabeler.CellLabeler = function(object,
                                     markers = NULL,
                                     similar.gene = 20,
                                     similar.pct = 0.8,
-                                    lfc = 0.5,
+                                    lfc = 0.1,
                                     max.genes = 100,
                                     min.ccells = 20,
                                     max.cellsp = NULL,
