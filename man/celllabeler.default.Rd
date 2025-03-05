@@ -6,12 +6,12 @@
 \usage{
 \method{celllabeler}{default}(
   object,
-  sample.id,
   cluster.id,
+  sample.id = NULL,
   markers = NULL,
   similar.gene = 20,
   similar.pct = 0.8,
-  lfc = 0.5,
+  lfc = 0.1,
   min.ccells = 10,
   max.cellsp = NULL,
   max.genes = 100,
@@ -24,9 +24,9 @@
 \arguments{
 \item{object}{A raw count gene expression matrix}
 
-\item{sample.id}{Character vectors of sample information for each cell.}
-
 \item{cluster.id}{Character vectors of cluster information for each cell.}
+
+\item{sample.id}{Character vectors of sample information for each cell.}
 
 \item{markers}{A list of markers; names of the list should be cell type names;}
 

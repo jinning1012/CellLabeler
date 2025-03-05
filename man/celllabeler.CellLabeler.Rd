@@ -12,7 +12,7 @@
   markers = NULL,
   similar.gene = 20,
   similar.pct = 0.8,
-  lfc = 0.5,
+  lfc = 0.1,
   max.genes = 100,
   min.ccells = 20,
   max.cellsp = NULL,

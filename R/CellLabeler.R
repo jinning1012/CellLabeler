@@ -88,7 +88,7 @@ celllabeler.default = function(object,
         data = counts
         
     }else{
-        data = NormalizeData(counts, verbose = verbose)
+        data = NormalizeData(counts, verbose = F)
     }
     
     ## record ##
